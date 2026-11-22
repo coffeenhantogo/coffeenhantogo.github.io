@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Giỏ hàng | Coffee Nhẫn To Go</title>
+  <meta name="robots" content="noindex">
+  <meta name="theme-color" content="#A8D636">
+  <link rel="icon" href="assets/img/logo-full.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700;800;900&family=Poppins:wght@500;600;700&display=swap&subset=vietnamese" rel="stylesheet">
+  <link rel="stylesheet" href="assets/css/style.css">
+</head>
+<body data-page="cart">
+  <main id="main">
+    <section class="cart-page">
+      <div class="container">
+        <nav class="crumbs dark" aria-label="Breadcrumb"><a href="index.html">Trang chủ</a><span aria-hidden="true">/</span><span>Giỏ hàng</span></nav>
+        <h1 class="section-title" style="text-align:left;margin:10px 0 28px">Giỏ hàng của bạn</h1>
+        <div data-cart-page></div>
+      </div>
+    </section>
+  </main>
+  <script src="assets/js/data.js"></script>
+  <script src="assets/js/site.js"></script>
+  <script>
+    (() => {
+      const N = window.NHAN, root = document.querySelector("[data-cart-page]");
+      document.querySelector(".cart-page .section-title").classList.add("no-bar");
+      function render() {
+        const items = N.cart.items();
+        if (!items.length) { root.innerHTML = `<div class="co-card">${N.emptyCartHTML}</div>`; return; }
+        const t = N.cart.total();
+        root.innerHTML = `
+          <div class="cart-layout">
+            <div>
+              <div class="cart-list" data-reveal="up">${items.map((i) => N.cartLineHTML(i)).join("")}</div>
+              <div style="display:flex;justify-content:space-between;gap:12px;margin-top:16px;flex-wrap:wrap">
+                <a class="btn btn-outline" href="thuc-don.html">← Tiếp tục chọn món</a>
+                <button class="btn btn-outline" type="button" data-clear>Xóa giỏ hàng</button>
+              </div>
+            </div>
+            <aside class="summary" data-reveal="right">
+              <h2>Tóm tắt đơn</h2>
+              <div class="sum-row"><span>Số món</span><b>${N.cart.count()}</b></div>
+              <div class="sum-row"><span>Tạm tính</span><b>${t.text}</b></div>
+              <div class="sum-row"><span>Phí giao hàng</span><b>Báo khi xác nhận</b></div>
+              <div class="sum-row total"><span>Tổng cộng</span><b>${t.text}</b></div>
+              <a class="btn btn-lime btn-block" href="thanh-toan.html">Tiến hành đặt hàng</a>
+              <p class="note">Nhân viên Nhẫn sẽ gọi/nhắn xác nhận đơn, báo giá và phí giao hàng (nếu có) trước khi pha chế và giao.</p>
+            </aside>
+          </div>`;
+        root.querySelectorAll("[data-reveal]").forEach((el) => N.anim([el], el.dataset.reveal, { stagger: false }));
+      }
+      root.addEventListener("click", (e) => { if (e.target.closest("[data-clear]") && confirm("Xóa toàn bộ giỏ hàng?")) N.cart.clear(); });
+      N.cart.onChange(render);
+      render();
+    })();
+  </script>
+</body>
+</html>

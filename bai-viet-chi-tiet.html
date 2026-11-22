@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Bài viết | Coffee Nhẫn To Go</title>
+  <meta name="description" content="Bài viết từ Coffee Nhẫn To Go.">
+  <meta name="theme-color" content="#A8D636">
+  <link rel="icon" href="assets/img/logo-full.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700;800;900&family=Poppins:wght@500;600;700&display=swap&subset=vietnamese" rel="stylesheet">
+  <link rel="stylesheet" href="assets/css/style.css">
+</head>
+<body data-page="article">
+  <main id="main">
+    <article class="article"><div class="container"><div class="article-wrap" data-article></div></div></article>
+    <section class="section bg-crema">
+      <div class="container">
+        <div class="section-head"><span class="kicker">Đọc tiếp</span><h2 class="section-title">Bài Viết Khác</h2></div>
+        <div class="grid-3" data-more></div>
+      </div>
+    </section>
+  </main>
+  <script src="assets/js/data.js"></script>
+  <script src="assets/js/site.js"></script>
+  <script>
+    (() => {
+      const N = window.NHAN, root = document.querySelector("[data-article]");
+      const a = N.ARTICLES.find((x) => x.slug === N.params.get("slug"));
+      if (!a) {
+        root.innerHTML = `<div class="nf"><div class="big">404</div><h1>Không tìm thấy bài viết</h1><div class="success-actions"><a class="btn btn-lime" href="bai-viet.html">Xem tất cả bài viết</a></div></div>`;
+        document.querySelector(".bg-crema").hidden = true;
+        return;
+      }
+      document.title = `${a.title} | Coffee Nhẫn To Go`;
+      document.querySelector('meta[name="description"]').setAttribute("content", a.excerpt);
+      const ld = document.createElement("script"); ld.type = "application/ld+json";
+      ld.textContent = JSON.stringify({ "@context": "https://schema.org", "@type": "Article", headline: a.title, image: N.img(a.img), datePublished: a.date, author: { "@type": "Organization", name: "Coffee Nhẫn To Go" } });
+      document.head.appendChild(ld);
+      const block = ([t, c]) => t === "p" ? `<p>${N.esc(c)}</p>` : t === "h2" ? `<h2>${N.esc(c)}</h2>` : t === "quote" ? `<blockquote>${N.esc(c)}</blockquote>` : t === "ul" ? `<ul>${c.map((li) => `<li>${N.esc(li)}</li>`).join("")}</ul>` : "";
+      const rel = (a.related || []).map((id) => N.byId[id]).filter(Boolean);
+      const url = location.href;
+      root.innerHTML = `
+        <nav class="crumbs dark" aria-label="Breadcrumb"><a href="index.html">Trang chủ</a><span aria-hidden="true">/</span><a href="bai-viet.html">Bài viết</a><span aria-hidden="true">/</span><span>${N.esc(a.tag)}</span></nav>
+        <h1 data-reveal="up">${N.esc(a.title)}</h1>
+        <div class="article-meta" data-reveal="up"><span class="post-tag" style="position:static">${N.esc(a.tag)}</span><span>${new Date(a.date).toLocaleDateString("vi-VN")}</span><span>·</span><span>${a.read} phút đọc</span></div>
+        <figure class="article-cover" data-reveal="zoom" style="margin-left:0;margin-right:0"><img src="${N.img(a.img)}" alt="${N.esc(a.title)}"></figure>
+        <div class="prose" data-reveal="up">${a.body.map(block).join("")}</div>
+        ${rel.length ? `<div class="article-products" data-reveal="up"><h3>Sản phẩm nhắc tới trong bài</h3><div class="mini-products">${rel.map((p) => `<a class="mini-product" href="${N.productUrl(p)}"><img src="${N.img(p.img)}" alt=""><span><b>${N.esc(p.name)}</b><small>${N.esc(p.cat)} · ${N.priceText(p)}</small></span></a>`).join("")}</div></div>` : ""}
+        <div class="share">Chia sẻ:
+          <a class="btn btn-outline btn-sm" href="https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(url)}" target="_blank" rel="noopener">Facebook</a>
+          <button class="btn btn-outline btn-sm" type="button" data-copy>Sao chép link</button>
+        </div>`;
+      root.querySelector("[data-copy]").addEventListener("click", async () => N.toast((await N.copy(url)) ? "Đã sao chép đường dẫn" : url));
+      root.querySelectorAll("[data-reveal]").forEach((el) => N.anim([el], el.dataset.reveal, { stagger: false }));
+      const more = N.ARTICLES.filter((x) => x.slug !== a.slug).slice(0, 3);
+      document.querySelector("[data-more]").innerHTML = more.map(N.postCard).join("");
+      N.anim(document.querySelectorAll("[data-more] .post"), "up", { mod: 3 });
+      N.anim(".bg-crema .section-head", "blur", { stagger: false });
+    })();
+  </script>
+</body>
+</html>

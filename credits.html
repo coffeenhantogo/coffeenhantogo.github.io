@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Nguồn ảnh | Coffee Nhẫn To Go</title>
+  <meta name="robots" content="noindex">
+  <link rel="icon" href="assets/img/logo-full.png">
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;700;800&display=swap&subset=vietnamese" rel="stylesheet">
+  <link rel="stylesheet" href="assets/css/style.css">
+  <style>
+    .credits { padding: 56px 0 80px; }
+    .credits h1 { font-size: 32px; font-weight: 800; color: var(--brown); }
+    .credits .lead { margin: 10px 0 30px; color: var(--muted); max-width: 720px; }
+    .credit-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 20px; }
+    .credit { border: 1px solid var(--latte); border-radius: 14px; overflow: hidden; background: #fff; }
+    .credit img { width: 100%; aspect-ratio: 3 / 2; object-fit: cover; }
+    .credit div { padding: 12px 14px; font-size: 14px; line-height: 1.5; }
+    .credit b { color: var(--brown); }
+    .credit a { color: var(--lime-deep); font-weight: 700; }
+    .back { display: inline-flex; margin-bottom: 20px; font-weight: 800; color: var(--lime-deep); }
+  </style>
+</head>
+<body data-page="credits">
+  <main class="container credits" id="main">
+    <a class="back" href="index.html">← Về trang chủ</a>
+    <h1>Nguồn ảnh</h1>
+    <p class="lead">Ảnh trên website là ảnh minh họa từ Wikimedia Commons, dùng theo giấy phép tự do ghi bên dưới (CC0, Public domain, CC BY, CC BY-SA). Ảnh không được chỉnh sửa nội dung, chỉ thay đổi kích thước.</p>
+    <div class="credit-list" id="list"></div>
+  </main>
+  <script>
+    const credits = [
+      ["hero-beans.jpg", "A S M Jobaer", "CC BY-SA 4.0", "https://commons.wikimedia.org/wiki/File:Roasted_coffee_beans_on_the_surface._01.jpg"],
+      ["hero-phin-table.jpg", "P. Hughes", "CC BY 4.0", "https://commons.wikimedia.org/wiki/File:Vietnam_-_preparing_coffee.jpg"],
+      ["hero-beans-hands.jpg", "Nathan Dumlao", "CC0", "https://commons.wikimedia.org/wiki/File:Coffee_beans_1_(Unsplash).jpg"],
+      ["hero-barista.jpg", "Shixart1985", "CC BY 2.0", "https://commons.wikimedia.org/wiki/File:Barista_prepares_espresso_at_coffee_shop.jpg"],
+      ["ground-phin-scoop.jpg", "HungryHuy", "CC BY 2.0", "https://commons.wikimedia.org/wiki/File:Scooping_coffee_into_metal_filter,_for_Vietnamese_coffee.jpg"],
+      ["ground-bowl.jpg", "Alorin", "CC BY 4.0", "https://commons.wikimedia.org/wiki/File:Coarsely_grounded_coffee_beans_in_white_bowl_with_intact_roasted_bean.png"],
+      ["ground-bowl-2.jpg", "Alorin", "CC BY 4.0", "https://commons.wikimedia.org/wiki/File:Less_coarsely_grounded_coffee_beans_in_white_bowl_with_intact_roasted_bean.png"],
+      ["beans-closeup.jpg", "MarkSweep", "Public domain", "https://commons.wikimedia.org/wiki/File:Roasted_coffee_beans.jpg"],
+      ["beans-bowl.jpg", "Alorin", "CC BY 4.0", "https://commons.wikimedia.org/wiki/File:Roasted_coffee_beans_in_white_bowl.png"],
+      ["beans-roasted.jpg", "Chuck Grimmett", "CC0", "https://commons.wikimedia.org/wiki/File:Coffee_Beans,_color_(28183654506).jpg"],
+      ["beans-sack-bags.jpg", "Jamain", "CC BY-SA 4.0", "https://commons.wikimedia.org/wiki/File:A_bag_of_coffee_J1.jpg"],
+      ["drink-sua-da.jpg", "KtMystic", "CC BY-SA 4.0", "https://commons.wikimedia.org/wiki/File:Iced_Ipoh_White_Coffee.jpg"],
+      ["drink-bac-xiu.jpg", "Klientos", "CC BY-SA 4.0", "https://commons.wikimedia.org/wiki/File:Iced_B%E1%BA%A1c_X%E1%BB%89u_served_in_tall_glass_on_the_table_in_tha_cafe,_Danang_city,_2023.jpg"],
+      ["drink-muoi.jpg", "Andy Li", "CC0", "https://commons.wikimedia.org/wiki/File:Maple_Cream_Cold_Brew_-_Trading_Post_Coffee_Roasters_2026-07-16.jpg"],
+      ["drink-den-da.jpg", "Quercus acuta", "CC BY-SA 4.0", "https://commons.wikimedia.org/wiki/File:Japanese_iced_coffee_-_01.jpg"],
+      ["drink-phin-nong.jpg", "Vinnie Cartabiano", "CC BY 2.0", "https://commons.wikimedia.org/wiki/File:Vietnamese_iced_coffee_-_Jan_31,_2018.jpg"],
+      ["coffee-cherries.jpg", "Saddymonster", "CC BY-SA 4.0", "https://commons.wikimedia.org/wiki/File:Hands-that-are-picking-coffee-beans-from-coffee-tree.jpg"],
+      ["plantation.jpg", "P. Hughes", "CC BY 4.0", "https://commons.wikimedia.org/wiki/File:Vietnam_-_coffee_plantation.jpg"],
+      ["latte-black.jpg", "Bex Walton", "CC BY 2.0", "https://commons.wikimedia.org/wiki/File:Latte_and_dark_coffee.jpg"],
+    ];
+    const licUrl = (l) => ({
+      "CC BY 2.0": "https://creativecommons.org/licenses/by/2.0/",
+      "CC BY 4.0": "https://creativecommons.org/licenses/by/4.0/",
+      "CC BY-SA 4.0": "https://creativecommons.org/licenses/by-sa/4.0/",
+      "CC0": "https://creativecommons.org/publicdomain/zero/1.0/",
+    }[l]);
+    document.getElementById("list").innerHTML = credits.map(([f, a, l, src]) => `
+      <figure class="credit" style="margin:0">
+        <img src="assets/img/photos/${f}" alt="" loading="lazy">
+        <div><b>${a}</b><br>${licUrl(l) ? `<a href="${licUrl(l)}" target="_blank" rel="noopener">${l}</a>` : l} · <a href="${src}" target="_blank" rel="noopener">Wikimedia Commons</a></div>
+      </figure>`).join("");
+  </script>
+  <script src="assets/js/data.js"></script>
+  <script src="assets/js/site.js"></script>
+</body>
+</html>

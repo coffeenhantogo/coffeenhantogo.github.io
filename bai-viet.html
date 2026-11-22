@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Bài viết – Góc cà phê | Coffee Nhẫn To Go</title>
+  <meta name="description" content="Kiến thức, hướng dẫn pha chế và câu chuyện cà phê từ Coffee Nhẫn To Go: pha phin tại nhà, Robusta và Arabica, chọn độ xay, bảo quản cà phê.">
+  <meta property="og:title" content="Bài viết – Góc cà phê | Coffee Nhẫn To Go">
+  <meta property="og:image" content="assets/img/photos/plantation.jpg">
+  <meta name="theme-color" content="#A8D636">
+  <link rel="icon" href="assets/img/logo-full.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700;800;900&family=Poppins:wght@500;600;700&display=swap&subset=vietnamese" rel="stylesheet">
+  <link rel="stylesheet" href="assets/css/style.css">
+</head>
+<body data-page="blog">
+  <main id="main">
+    <section class="page-hero">
+      <img class="page-hero-bg" src="assets/img/photos/plantation.jpg" alt="">
+      <div class="container">
+        <nav class="crumbs" aria-label="Breadcrumb"><a href="index.html">Trang chủ</a><span aria-hidden="true">/</span><span>Bài viết</span></nav>
+        <h1>Góc <em>cà phê</em></h1>
+        <p>Hướng dẫn pha chế, kiến thức về hạt và những câu chuyện nhỏ từ Nhẫn.</p>
+      </div>
+    </section>
+    <section class="section">
+      <div class="container">
+        <div class="toolbar"><div class="filter-chips" role="tablist" aria-label="Chủ đề" data-tags></div></div>
+        <div class="grid-3" data-posts></div>
+      </div>
+    </section>
+  </main>
+  <script src="assets/js/data.js"></script>
+  <script src="assets/js/site.js"></script>
+  <script>
+    (() => {
+      const N = window.NHAN;
+      const tags = ["Tất cả", ...new Set(N.ARTICLES.map((a) => a.tag))];
+      let active = N.params.get("chu-de") || "Tất cả";
+      const tagsEl = document.querySelector("[data-tags]"), postsEl = document.querySelector("[data-posts]");
+      function render() {
+        tagsEl.innerHTML = tags.map((t) => `<button class="fchip ${t === active ? "is-active" : ""}" role="tab" aria-selected="${t === active}" data-t="${N.esc(t)}">${N.esc(t)}</button>`).join("");
+        const list = N.ARTICLES.filter((a) => active === "Tất cả" || a.tag === active).sort((a, b) => b.date.localeCompare(a.date));
+        postsEl.innerHTML = list.map(N.postCard).join("");
+        N.anim(postsEl.querySelectorAll(".post"), "up", { mod: 3 });
+      }
+      tagsEl.addEventListener("click", (e) => {
+        const b = e.target.closest("[data-t]"); if (!b) return;
+        active = b.dataset.t;
+        const u = new URL(location.href); active === "Tất cả" ? u.searchParams.delete("chu-de") : u.searchParams.set("chu-de", active); history.replaceState(null, "", u);
+        render();
+      });
+      N.anim(".toolbar", "up", { stagger: false });
+      render();
+    })();
+  </script>
+</body>
+</html>

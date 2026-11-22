@@ -1,0 +1,463 @@
+/* =========================================================
+   Coffee Nhẫn To Go — shared site script (all pages)
+   Renders header/footer/overlays, cart (with options), option picker,
+   search, scroll animations, toast, order submission helpers.
+   Requires data.js loaded first. Page scripts use window.NHAN.
+   ========================================================= */
+(() => {
+  "use strict";
+  const N = window.NHAN;
+  const S = N.STORE;
+  const params = new URLSearchParams(location.search);
+  const STATIC = params.has("shot");
+  if (STATIC) document.documentElement.classList.add("static");
+  const reduced = matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const page = document.body.dataset.page || "";
+
+  /* ---------- utils ---------- */
+  const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+  const fmtVND = (n) => new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND", maximumFractionDigits: 0 }).format(n);
+  const img = (name) => `assets/img/photos/${name}.jpg`;
+  const byId = Object.fromEntries(N.PRODUCTS.map((p) => [p.id, p]));
+  const productUrl = (p) => `san-pham-chi-tiet.html?id=${encodeURIComponent(p.id)}`;
+  const unitPrice = (p, opts = {}) => {
+    if (p.priceBy) { for (const v of Object.values(opts)) if (p.priceBy[v] != null) return p.priceBy[v]; }
+    return p.price ?? null;
+  };
+  const priceText = (p, opts) => { const v = unitPrice(p, opts); return v == null ? "Liên hệ" : fmtVND(v); };
+  const norm = (s) => String(s).normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/đ/g, "d").replace(/Đ/g, "D").toLowerCase();
+  const optSummary = (opts = {}) => Object.values(opts).filter(Boolean).join(" · ");
+  const store = {
+    get(k, d) { try { const v = localStorage.getItem(k); return v ? JSON.parse(v) : d; } catch { return d; } },
+    set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch { /* unavailable */ } },
+  };
+  Object.assign(N, { esc, fmtVND, img, byId, productUrl, unitPrice, priceText, norm, optSummary, store, STATIC, params });
+
+  /* ---------- icons ---------- */
+  const IC = {
+    pin: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2a7 7 0 0 0-7 7c0 5 7 13 7 13s7-8 7-13a7 7 0 0 0-7-7zm0 9.5A2.5 2.5 0 1 1 12 6.5a2.5 2.5 0 0 1 0 5z" fill="currentColor"/></svg>',
+    phone: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 9c0-3 2-5 4-5l2 4-2 1.5c1 2.5 3 4.5 5.5 5.5L14 13l4 2c0 2-2 4-5 4C7.5 19 3 14.5 3 9z" fill="currentColor"/></svg>',
+    mail: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6h18v12H3z" fill="none" stroke="currentColor" stroke-width="2"/><path d="m3 7 9 6 9-6" fill="none" stroke="currentColor" stroke-width="2"/></svg>',
+    chev: '<svg class="chev" viewBox="0 0 12 12" aria-hidden="true"><path d="M3 4.5 6 7.5l3-3" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>',
+    bag: '<svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M5 8h14l-1.2 12H6.2L5 8z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/><path d="M9 8V6.5a3 3 0 0 1 6 0V8" fill="none" stroke="currentColor" stroke-width="2"/></svg>',
+    search: '<svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><circle cx="11" cy="11" r="6.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="m16 16 4 4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>',
+    plus: '<svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/></svg>',
+    receipt: '<svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M6 3h12v18l-3-2-3 2-3-2-3 2z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/><path d="M9 8h6M9 12h6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>',
+  };
+  N.IC = IC;
+
+  /* ---------- layout: header / footer / overlays ---------- */
+  const NAV = [
+    { href: "index.html", label: "Trang chủ", key: "home" },
+    { href: "thuc-don.html", label: "Thực đơn", key: "menu" },
+    { href: "san-pham.html", label: "Sản phẩm", key: "shop", sub: [
+      { href: "san-pham.html?loai=rang-xay", label: "Cà phê rang xay" },
+      { href: "san-pham.html?loai=hat", label: "Cà phê hạt nguyên" },
+      { href: "thuc-don.html", label: "Đồ uống pha sẵn" },
+    ] },
+    { href: "bai-viet.html", label: "Bài viết", key: "blog" },
+    { href: "ve-chung-toi.html", label: "Về chúng tôi", key: "about" },
+    { href: "lien-he.html", label: "Liên hệ", key: "contact" },
+  ];
+  const isCurrent = (k) => (k === page || (k === "shop" && page === "product") || (k === "blog" && page === "article"));
+
+  const headerHTML = `
+  <a class="skip-link" href="#main">Bỏ qua tới nội dung chính</a>
+  <div class="topbar">
+    <div class="container topbar-inner">
+      <span class="tb-item hide-md">${IC.pin} 351 Minh Phụng &nbsp;·&nbsp; 26B/4 Lạc Long Quân, TP.HCM</span>
+      <span class="tb-slogan">Drink to be happy</span>
+      <span class="tb-right hide-md">
+        <a class="tb-item" href="mailto:${S.email}">${IC.mail} ${S.email}</a>
+        <a class="tb-item" href="tel:${S.phone}">${IC.phone} ${S.phoneDisplay}</a>
+      </span>
+    </div>
+  </div>
+  <header class="header" id="top">
+    <div class="container header-inner">
+      <button class="icon-btn menu-toggle" aria-label="Mở menu" aria-expanded="false" aria-controls="mobileNav" data-open="mobileNav">
+        <svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h10" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+      </button>
+      <a class="brand" href="index.html" aria-label="${S.name} – Trang chủ">
+        <img src="assets/img/nhan-wordmark.png" alt="Nhẫn Coffee" width="70" height="47">
+        <span class="brand-sep" aria-hidden="true"></span>
+        <span class="brand-tag"><b>To Go</b><small>Cà phê phin</small></span>
+      </a>
+      <nav class="nav" aria-label="Điều hướng chính">
+        <ul>
+          ${NAV.filter((n) => n.key !== "home").map((n) => `
+            <li class="${n.sub ? "has-sub" : ""}">
+              <a href="${n.href}" class="${isCurrent(n.key) ? "is-current" : ""}" ${isCurrent(n.key) ? 'aria-current="page"' : ""}>${n.label}${n.sub ? " " + IC.chev : ""}</a>
+              ${n.sub ? `<ul class="sub">${n.sub.map((s) => `<li><a href="${s.href}">${s.label}</a></li>`).join("")}</ul>` : ""}
+            </li>`).join("")}
+        </ul>
+      </nav>
+      <div class="header-actions">
+        <button class="icon-btn round" aria-label="Tìm kiếm sản phẩm" data-open="searchModal">${IC.search}</button>
+        <a class="icon-btn round hide-sm" href="don-hang.html" aria-label="Đơn hàng của tôi" title="Đơn hàng của tôi">${IC.receipt}</a>
+        <button class="icon-btn round cart-btn" aria-label="Giỏ hàng" data-open="cartDrawer">${IC.bag}<span class="cart-count" data-cart-count hidden>0</span></button>
+        <a class="btn-order" href="thuc-don.html">${IC.phone.replace("<svg", '<svg width="16" height="16"')} Đặt hàng</a>
+      </div>
+    </div>
+  </header>`;
+
+  const footerHTML = `
+  <footer class="footer" id="contact">
+    <div class="container footer-grid">
+      <div>
+        <h3>COFFEE NHẪN TO GO</h3>
+        <p>Cà phê pha phin mang đi, cà phê hạt và cà phê rang xay. Pha chậm bằng sự kiên nhẫn – uống để hạnh phúc.</p>
+        <img class="footer-slogan" src="assets/img/drink-to-be-happy.png" alt="Drink to be happy" width="210" height="40" loading="lazy">
+      </div>
+      <div>
+        <h3>LIÊN KẾT</h3>
+        <ul class="links">
+          <li><a href="thuc-don.html">Thực Đơn Đồ Uống</a></li>
+          <li><a href="san-pham.html?loai=hat">Cà Phê Hạt</a></li>
+          <li><a href="san-pham.html?loai=rang-xay">Cà Phê Rang Xay</a></li>
+          <li><a href="don-hang.html">Đơn Hàng Của Tôi</a></li>
+          <li><a href="chinh-sach.html">Chính Sách Mua Hàng</a></li>
+        </ul>
+      </div>
+      <div>
+        <h3>LIÊN HỆ</h3>
+        <ul class="contact">
+          ${S.branches.map((b) => `<li>${IC.pin}<a href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(b.mapQuery)}" target="_blank" rel="noopener">${b.address}</a></li>`).join("")}
+          <li>${IC.phone}<span><a href="tel:${S.phone}">${S.phoneDisplay}</a> · <a href="${S.zalo}" target="_blank" rel="noopener">Zalo</a></span></li>
+          <li>${IC.mail}<a href="mailto:${S.email}">${S.email}</a></li>
+        </ul>
+      </div>
+    </div>
+    <div class="copyright">Copyright © ${new Date().getFullYear()} COFFEE NHẪN TO GO. Drink to be happy. · <a href="chinh-sach.html">Chính sách</a> · <a href="credits.html">Nguồn ảnh</a></div>
+  </footer>
+  <div class="float-contact">
+    <a class="float-btn zalo" href="${S.zalo}" target="_blank" rel="noopener" aria-label="Chat Zalo với Nhẫn Coffee">Zalo</a>
+    <a class="float-btn call" href="tel:${S.phone}" aria-label="Gọi ${S.phoneDisplay}">${IC.phone.replace("<svg", '<svg width="24" height="24"')}</a>
+  </div>
+  <div class="overlay" data-overlay hidden></div>
+  <aside class="drawer drawer-left" id="mobileNav" aria-label="Menu" hidden>
+    <div class="drawer-head">
+      <img src="assets/img/nhan-wordmark.png" alt="Nhẫn Coffee" width="66" height="45">
+      <button class="icon-btn" aria-label="Đóng menu" data-close>&times;</button>
+    </div>
+    <nav class="mnav">
+      ${NAV.map((n) => `<a href="${n.href}" class="${isCurrent(n.key) ? "is-current" : ""}">${n.label}</a>`).join("")}
+      <a href="don-hang.html">Đơn hàng của tôi</a>
+      <a class="btn btn-lime" href="tel:${S.phone}">Gọi ${S.phoneDisplay}</a>
+    </nav>
+  </aside>
+  <aside class="drawer drawer-right" id="cartDrawer" aria-label="Giỏ hàng" hidden>
+    <div class="drawer-head">
+      <h2>Giỏ hàng <small data-cart-count-text></small></h2>
+      <button class="icon-btn" aria-label="Đóng giỏ hàng" data-close>&times;</button>
+    </div>
+    <div class="cart-body" data-cart-body></div>
+    <div class="cart-foot" data-cart-foot>
+      <div class="cart-total"><span>Tạm tính</span><b data-cart-total>0 ₫</b></div>
+      <p class="cart-note">Giá được nhân viên báo khi xác nhận đơn (kèm phí giao hàng nếu có).</p>
+      <a class="btn btn-lime btn-block" href="thanh-toan.html">Tiến hành đặt hàng</a>
+      <a class="btn btn-outline btn-block" href="gio-hang.html">Xem giỏ hàng</a>
+    </div>
+  </aside>
+  <div class="modal" id="searchModal" role="dialog" aria-modal="true" aria-label="Tìm kiếm" hidden>
+    <div class="modal-box">
+      <div class="search-row">
+        ${IC.search}
+        <input type="search" placeholder="Tìm cà phê, bạc xỉu, robusta…" aria-label="Từ khóa" data-search-input>
+        <button class="icon-btn" aria-label="Đóng" data-close>&times;</button>
+      </div>
+      <ul class="search-results" data-search-results></ul>
+    </div>
+  </div>
+  <div class="modal" id="optionModal" role="dialog" aria-modal="true" aria-label="Chọn tùy chọn" hidden>
+    <div class="modal-box opt-box" data-opt-box></div>
+  </div>
+  <div class="toast" role="status" aria-live="polite" data-toast></div>`;
+
+  document.body.insertAdjacentHTML("afterbegin", headerHTML);
+  document.body.insertAdjacentHTML("beforeend", footerHTML);
+
+  /* ---------- toast ---------- */
+  const toastEl = document.querySelector("[data-toast]");
+  let toastT;
+  N.toast = (msg) => {
+    toastEl.textContent = msg;
+    toastEl.classList.add("show");
+    clearTimeout(toastT);
+    toastT = setTimeout(() => toastEl.classList.remove("show"), 2800);
+  };
+
+  /* ---------- overlays ---------- */
+  const overlay = document.querySelector("[data-overlay]");
+  let openEl = null, lastFocus = null;
+  N.open = (id) => {
+    N.close();
+    openEl = document.getElementById(id);
+    if (!openEl) return;
+    lastFocus = document.activeElement;
+    openEl.hidden = false;
+    if (openEl.classList.contains("drawer")) overlay.hidden = false;
+    document.body.style.overflow = "hidden";
+    const f = openEl.querySelector("input:not([type=radio]), button, a");
+    f && f.focus();
+    document.querySelectorAll(`[data-open="${id}"]`).forEach((b) => b.setAttribute("aria-expanded", "true"));
+  };
+  N.close = () => {
+    if (!openEl) return;
+    document.querySelectorAll(`[data-open="${openEl.id}"]`).forEach((b) => b.setAttribute("aria-expanded", "false"));
+    openEl.hidden = true; overlay.hidden = true; document.body.style.overflow = ""; openEl = null;
+    lastFocus && lastFocus.focus && lastFocus.focus();
+  };
+  document.addEventListener("click", (e) => {
+    const o = e.target.closest("[data-open]");
+    if (o) { e.preventDefault(); N.open(o.dataset.open); return; }
+    if (e.target.closest("[data-close]") || e.target === overlay) N.close();
+    if (openEl && openEl.classList.contains("modal") && e.target === openEl) N.close();
+  });
+  document.addEventListener("keydown", (e) => { if (e.key === "Escape") N.close(); });
+
+  /* ---------- cart ---------- */
+  const CART_KEY = "nhan-cart-v2";
+  let cart = store.get(CART_KEY, []).filter((i) => byId[i.id] && i.qty > 0);
+  const listeners = [];
+  const keyOf = (id, opts, note) => `${id}|${JSON.stringify(opts || {})}|${note || ""}`;
+  const saveCart = () => { store.set(CART_KEY, cart); listeners.forEach((fn) => fn(cart)); renderCart(); };
+  N.cart = {
+    items: () => cart.slice(),
+    count: () => cart.reduce((s, i) => s + i.qty, 0),
+    add(id, qty = 1, opts = {}, note = "") {
+      const key = keyOf(id, opts, note);
+      const it = cart.find((i) => i.key === key);
+      it ? (it.qty += qty) : cart.push({ key, id, qty, opts, note });
+      saveCart();
+      const btn = document.querySelector(".cart-btn");
+      if (btn) { btn.classList.remove("bump"); void btn.offsetWidth; btn.classList.add("bump"); }
+      N.toast(`Đã thêm “${byId[id].name}” vào giỏ`);
+    },
+    setQty(key, qty) { cart = qty <= 0 ? cart.filter((i) => i.key !== key) : cart.map((i) => (i.key === key ? { ...i, qty: Math.min(99, qty) } : i)); saveCart(); },
+    remove(key) { this.setQty(key, 0); },
+    clear() { cart = []; saveCart(); },
+    onChange(fn) { listeners.push(fn); },
+    total() {
+      const unpriced = cart.some((i) => unitPrice(byId[i.id], i.opts) == null);
+      const sum = cart.reduce((s, i) => s + (unitPrice(byId[i.id], i.opts) || 0) * i.qty, 0);
+      return { unpriced, sum, text: unpriced ? "Báo giá khi xác nhận" : fmtVND(sum) };
+    },
+  };
+
+  N.cartLineHTML = (i, { compact = true } = {}) => {
+    const p = byId[i.id];
+    return `<div class="c-item" data-key="${esc(i.key)}">
+      <a class="c-thumb" href="${productUrl(p)}"><img src="${img(p.img)}" alt="" loading="lazy"></a>
+      <div class="c-main">
+        <a class="c-name" href="${productUrl(p)}">${esc(p.name)}</a>
+        ${optSummary(i.opts) ? `<div class="c-opts">${esc(optSummary(i.opts))}</div>` : ""}
+        ${i.note ? `<div class="c-opts">Ghi chú: ${esc(i.note)}</div>` : ""}
+        <div class="c-row">
+          <div class="qty" role="group" aria-label="Số lượng"><button type="button" aria-label="Giảm" data-qty="-1">−</button><span>${i.qty}</span><button type="button" aria-label="Tăng" data-qty="1">+</button></div>
+          <span class="c-price">${priceText(p, i.opts)}</span>
+        </div>
+      </div>
+      <button class="c-remove" type="button" aria-label="Xóa ${esc(p.name)}" data-remove>&times;</button>
+    </div>`;
+  };
+
+  const cartBody = document.querySelector("[data-cart-body]");
+  const cartFoot = document.querySelector("[data-cart-foot]");
+  N.emptyCartHTML = `<div class="cart-empty"><div class="cart-empty-ic">${IC.bag.replace('width="20" height="20"', 'width="34" height="34"')}</div><p>Giỏ hàng đang trống.<br>Chọn một ly cà phê để bắt đầu nhé!</p><a class="btn btn-lime" href="thuc-don.html">Xem thực đơn</a></div>`;
+  function renderCart() {
+    const count = N.cart.count();
+    document.querySelectorAll("[data-cart-count]").forEach((el) => { el.textContent = count; el.hidden = count === 0; });
+    document.querySelectorAll("[data-cart-count-text]").forEach((el) => (el.textContent = count ? `(${count})` : ""));
+    cartBody.innerHTML = cart.length ? cart.map((i) => N.cartLineHTML(i)).join("") : N.emptyCartHTML;
+    cartFoot.hidden = !cart.length;
+    document.querySelector("[data-cart-total]").textContent = N.cart.total().text;
+  }
+  document.addEventListener("click", (e) => {
+    const line = e.target.closest(".c-item[data-key]");
+    if (!line) return;
+    const key = line.dataset.key;
+    const it = cart.find((i) => i.key === key);
+    if (!it) return;
+    const q = e.target.closest("[data-qty]");
+    if (q) N.cart.setQty(key, it.qty + Number(q.dataset.qty));
+    if (e.target.closest("[data-remove]")) N.cart.remove(key);
+  });
+  addEventListener("storage", (e) => { if (e.key === CART_KEY) { cart = store.get(CART_KEY, []); renderCart(); listeners.forEach((fn) => fn(cart)); } });
+  renderCart();
+
+  /* ---------- option picker (quick add) ---------- */
+  const defaultOpt = (k, vals) => (k === "sugar" ? (vals.includes("Vừa") ? "Vừa" : vals[0]) : k === "ice" ? (vals.includes("Bình thường") ? "Bình thường" : vals[0]) : vals[0]);
+  N.defaultOpts = (p) => Object.fromEntries(Object.entries(p.options || {}).map(([k, v]) => [k, defaultOpt(k, v)]));
+  N.optionsFieldsHTML = (p, selected = N.defaultOpts(p), name = "opt") =>
+    Object.entries(p.options || {}).map(([k, vals]) => `
+      <fieldset class="opt-group">
+        <legend>${N.OPTION_LABELS[k] || k}</legend>
+        <div class="chips">
+          ${vals.map((v) => `<label class="chip"><input type="radio" name="${name}-${k}" value="${esc(v)}" ${selected[k] === v ? "checked" : ""} data-opt-key="${k}"><span>${esc(v)}</span></label>`).join("")}
+        </div>
+      </fieldset>`).join("");
+  N.readOpts = (root) => {
+    const o = {};
+    root.querySelectorAll("input[data-opt-key]:checked").forEach((i) => (o[i.dataset.optKey] = i.value));
+    return o;
+  };
+  const optBox = document.querySelector("[data-opt-box]");
+  N.pick = (id) => {
+    const p = byId[id];
+    if (!p) return;
+    if (!p.options || !Object.keys(p.options).length) { N.cart.add(id); return; }
+    optBox.innerHTML = `
+      <div class="opt-head">
+        <img src="${img(p.img)}" alt="">
+        <div><p class="p-cat">${esc(p.cat)}</p><h3>${esc(p.name)}</h3><p class="opt-price">${priceText(p)}</p></div>
+        <button class="icon-btn" aria-label="Đóng" data-close>&times;</button>
+      </div>
+      <form class="opt-form" data-opt-form>
+        ${N.optionsFieldsHTML(p, N.defaultOpts(p), "q")}
+        <label class="field"><span>Ghi chú cho món (tùy chọn)</span><input type="text" name="note" maxlength="120" placeholder="VD: ít ngọt hơn, thêm đá riêng…"></label>
+        <div class="opt-foot">
+          <div class="qty qty-lg" role="group" aria-label="Số lượng"><button type="button" data-step="-1" aria-label="Giảm">−</button><input type="number" name="qty" value="1" min="1" max="99" aria-label="Số lượng"><button type="button" data-step="1" aria-label="Tăng">+</button></div>
+          <button class="btn btn-lime" type="submit">${IC.plus} Thêm vào giỏ</button>
+        </div>
+      </form>`;
+    N.open("optionModal");
+    const form = optBox.querySelector("[data-opt-form]");
+    form.addEventListener("submit", (e) => {
+      e.preventDefault();
+      const qty = Math.max(1, Math.min(99, parseInt(form.qty.value, 10) || 1));
+      N.cart.add(id, qty, N.readOpts(form), form.note.value.trim());
+      N.close();
+    });
+  };
+  // qty steppers anywhere
+  document.addEventListener("click", (e) => {
+    const st = e.target.closest("[data-step]");
+    if (!st) return;
+    const input = st.parentElement.querySelector("input[type=number]");
+    if (input) input.value = Math.max(1, Math.min(99, (parseInt(input.value, 10) || 1) + Number(st.dataset.step)));
+  });
+  document.addEventListener("click", (e) => {
+    const a = e.target.closest("[data-add]");
+    if (a) { e.preventDefault(); N.pick(a.dataset.add); }
+  });
+
+  /* ---------- product card ---------- */
+  N.card = (p) => `<article class="p-card">
+      <div class="p-media-wrap">
+        <a class="p-media" href="${productUrl(p)}" aria-label="${esc(p.name)}">
+          ${p.badge ? `<span class="p-badge">${esc(p.badge)}</span>` : ""}
+          <img src="${img(p.img)}" alt="${esc(p.name)}" loading="lazy">
+        </a>
+        <button class="p-add" type="button" data-add="${p.id}" aria-label="Thêm ${esc(p.name)} vào giỏ">${IC.plus}Thêm vào giỏ</button>
+      </div>
+      <p class="p-cat">${esc(p.cat)}</p>
+      <h3 class="p-name"><a href="${productUrl(p)}">${esc(p.name)}</a></h3>
+      <p class="p-price">${priceText(p)}</p>
+    </article>`;
+
+  N.postCard = (a) => `<article class="post">
+      <a class="post-media" href="bai-viet-chi-tiet.html?slug=${a.slug}"><img src="${img(a.img)}" alt="${esc(a.title)}" loading="lazy"><span class="post-tag">${esc(a.tag)}</span></a>
+      <p class="post-meta">${new Date(a.date).toLocaleDateString("vi-VN")} · ${a.read} phút đọc</p>
+      <h3><a href="bai-viet-chi-tiet.html?slug=${a.slug}">${esc(a.title)}</a></h3>
+      <p>${esc(a.excerpt)}</p>
+      <a class="more" href="bai-viet-chi-tiet.html?slug=${a.slug}">Xem thêm <span aria-hidden="true">→</span></a>
+    </article>`;
+
+  /* ---------- search ---------- */
+  const sInput = document.querySelector("[data-search-input]");
+  const sResults = document.querySelector("[data-search-results]");
+  function renderSearch() {
+    const q = norm(sInput.value.trim());
+    const list = N.PRODUCTS.filter((p) => !q || norm(`${p.name} ${p.cat} ${p.short}`).includes(q));
+    const arts = q ? N.ARTICLES.filter((a) => norm(a.title).includes(q)) : [];
+    sResults.innerHTML = (list.length || arts.length)
+      ? list.map((p) => `<li><a class="c-thumb" href="${productUrl(p)}"><img src="${img(p.img)}" alt="" loading="lazy"></a><div><a class="c-name" href="${productUrl(p)}">${esc(p.name)}</a><div class="c-price">${esc(p.cat)} · ${priceText(p)}</div></div><button class="mini-add" type="button" data-add="${p.id}">Thêm</button></li>`).join("")
+        + arts.map((a) => `<li><a class="c-thumb" href="bai-viet-chi-tiet.html?slug=${a.slug}"><img src="${img(a.img)}" alt="" loading="lazy"></a><div><a class="c-name" href="bai-viet-chi-tiet.html?slug=${a.slug}">${esc(a.title)}</a><div class="c-price">Bài viết</div></div></li>`).join("")
+      : `<li class="search-empty">Không tìm thấy kết quả phù hợp. Gọi <a href="tel:${S.phone}"><b>${S.phoneDisplay}</b></a> để được tư vấn.</li>`;
+  }
+  sInput.addEventListener("input", renderSearch);
+  sInput.addEventListener("keydown", (e) => { if (e.key === "Enter") { const first = sResults.querySelector("a.c-name"); first && (location.href = first.href); } });
+  renderSearch();
+
+  /* ---------- scroll animations ---------- */
+  const ANIM = !STATIC && !reduced;
+  if (ANIM) document.documentElement.classList.add("js-anim");
+  const pending = new Set();
+  const show = (n) => { n.classList.add("in"); pending.delete(n); animIO && animIO.unobserve(n); };
+  const animIO = ANIM && "IntersectionObserver" in window
+    ? new IntersectionObserver((es) => es.forEach((e) => { if (e.isIntersecting) show(e.target); }), { threshold: 0.12, rootMargin: "0px 0px -6% 0px" })
+    : null;
+  let ticking = false;
+  const sweep = () => { ticking = false; const vh = innerHeight; pending.forEach((n) => { const r = n.getBoundingClientRect(); if (r.top < vh * 0.94 && r.bottom > 0) show(n); }); };
+  const requestSweep = () => { if (!ticking && pending.size) { ticking = true; requestAnimationFrame(sweep); } };
+  if (ANIM) { addEventListener("scroll", requestSweep, { passive: true }); addEventListener("resize", requestSweep); }
+  N.anim = (targets, type, { stagger = true, mod = 5 } = {}) => {
+    const nodes = typeof targets === "string" ? document.querySelectorAll(targets) : targets;
+    nodes.forEach((n, i) => {
+      n.dataset.anim = type;
+      if (stagger) n.style.setProperty("--i", i % mod);
+      if (!ANIM) return;
+      pending.add(n);
+      animIO && animIO.observe(n);
+    });
+    requestSweep();
+  };
+
+  // auto-register: page banners, footer, and any element with data-reveal="up|left|right|zoom|blur|clip"
+  const autoAnim = () => {
+    N.anim(".page-hero .container > *", "up", { mod: 4 });
+    N.anim(".footer-grid > div", "up", { mod: 3 });
+    const groups = new Map();
+    document.querySelectorAll("[data-reveal]").forEach((el) => {
+      const parent = el.parentElement;
+      const list = groups.get(parent) || [];
+      list.push(el); groups.set(parent, list);
+    });
+    groups.forEach((els) => els.forEach((el, i) => { el.style.setProperty("--i", i % 5); N.anim([el], el.dataset.reveal, { stagger: false }); }));
+  };
+  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", autoAnim); else setTimeout(autoAnim, 0);
+
+  // scroll progress
+  const bar = document.createElement("div");
+  bar.className = "scroll-progress"; bar.setAttribute("aria-hidden", "true");
+  document.body.appendChild(bar);
+  const updateBar = () => { const max = document.documentElement.scrollHeight - innerHeight; bar.style.transform = `scaleX(${max > 0 ? Math.min(1, scrollY / max) : 0})`; };
+  addEventListener("scroll", updateBar, { passive: true });
+
+  // header shrink
+  const header = document.querySelector(".header");
+  const onScroll = () => header.classList.toggle("is-stuck", scrollY > 40);
+  addEventListener("scroll", onScroll, { passive: true });
+  onScroll();
+
+  /* ---------- forms: FormSubmit + orders ---------- */
+  N.canSend = () => /^https?:$/.test(location.protocol);
+  N.sendForm = async (data) => {
+    if (!N.canSend()) throw new Error("local-file");
+    const res = await fetch(S.formEndpoint, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Accept: "application/json" },
+      body: JSON.stringify({ _captcha: "false", _template: "table", ...data }),
+    });
+    const json = await res.json().catch(() => ({}));
+    if (!res.ok || json.success === "false" || json.success === false) throw new Error(json.message || `HTTP ${res.status}`);
+    return json;
+  };
+  const ORDERS_KEY = "nhan-orders-v1";
+  N.orders = {
+    all: () => store.get(ORDERS_KEY, []),
+    get: (code) => store.get(ORDERS_KEY, []).find((o) => o.code === code),
+    save(o) { const list = store.get(ORDERS_KEY, []).filter((x) => x.code !== o.code); list.unshift(o); store.set(ORDERS_KEY, list.slice(0, 50)); },
+  };
+  N.newOrderCode = () => {
+    const d = new Date();
+    const p = (n) => String(n).padStart(2, "0");
+    return `NH${String(d.getFullYear()).slice(2)}${p(d.getMonth() + 1)}${p(d.getDate())}-${Math.random().toString(36).slice(2, 6).toUpperCase()}`;
+  };
+  N.orderText = (o) => {
+    const lines = o.items.map((i, k) => `${k + 1}. ${i.name} x${i.qty}${i.opts ? ` (${i.opts})` : ""}${i.note ? ` – ${i.note}` : ""}`).join("\n");
+    return `ĐƠN HÀNG ${o.code} – ${S.name}\n${lines}\n\nKhách: ${o.customer.name} – ${o.customer.phone}\n${o.delivery.method === "ship" ? `Giao tới: ${o.delivery.address}` : `Nhận tại: ${o.delivery.branch}`}\nThời gian: ${o.delivery.time}\nThanh toán: ${o.payment}${o.note ? `\nGhi chú: ${o.note}` : ""}`;
+  };
+  N.copy = async (text) => { try { await navigator.clipboard.writeText(text); return true; } catch { return false; } };
+})();

@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Không tìm thấy trang | Coffee Nhẫn To Go</title>
+  <meta name="robots" content="noindex">
+  <meta name="theme-color" content="#A8D636">
+  <link rel="icon" href="/assets/img/logo-full.png">
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700;800;900&family=Poppins:wght@500;600;700&display=swap&subset=vietnamese" rel="stylesheet">
+  <!-- GitHub Pages serves this file for unknown paths (possibly nested), so resolve assets from the site root -->
+  <script>
+    (function () {
+      var seg = location.pathname.split("/").filter(Boolean);
+      // project sites live under /<repo>/ ; user sites at /
+      var base = location.hostname.endsWith("github.io") && seg.length ? "/" + seg[0] + "/" : "/";
+      if (location.protocol === "file:") base = "";
+      document.write('<base href="' + base + '">');
+    })();
+  </script>
+  <link rel="stylesheet" href="assets/css/style.css">
+</head>
+<body data-page="404">
+  <main id="main">
+    <section class="nf">
+      <div class="container">
+        <div class="big" data-reveal="zoom">404</div>
+        <h1 data-reveal="up">Ối, trang này không tồn tại</h1>
+        <p data-reveal="up">Có thể đường dẫn đã thay đổi. Trong lúc chờ, làm một ly cà phê nhé?</p>
+        <div class="success-actions" data-reveal="up">
+          <a class="btn btn-lime" href="index.html">Về trang chủ</a>
+          <a class="btn btn-outline" href="thuc-don.html">Xem thực đơn</a>
+        </div>
+      </div>
+    </section>
+  </main>
+  <script src="assets/js/data.js"></script>
+  <script src="assets/js/site.js"></script>
+</body>
+</html>

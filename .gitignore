@@ -1,0 +1,10 @@
+# Internal / not for the public website (GitHub Pages publishes every committed file)
+CLAUDE.md
+coffeeconcept.vn_.png
+logocoffeenhantogo.png
+docs/design-reference/
+
+# OS / editor
+Thumbs.db
+.DS_Store
+.vscode/
