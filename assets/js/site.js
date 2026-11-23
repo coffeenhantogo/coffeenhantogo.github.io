@@ -91,6 +91,7 @@
       </button>
       <a class="brand" href="${HOME}" aria-label="${S.name} – Trang chủ">
         <img class="brand-badge" src="assets/img/logo-badge.png" alt="Logo Coffee Nhẫn To Go – Drink to be happy" width="64" height="64">
+        <span class="brand-name"><b>Coffee Nhẫn</b><small>To Go</small></span>
       </a>
       <nav class="nav" aria-label="Điều hướng chính">
         <ul>
