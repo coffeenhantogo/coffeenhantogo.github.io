@@ -83,8 +83,14 @@ a.tb-item:hover { color: var(--lime); }
 .header.is-stuck .header-inner { height: 64px; }
 
 .brand { display: flex; align-items: center; gap: 12px; flex-shrink: 0; }
-.brand img { width: 70px; height: auto; transition: width .3s var(--ease); }
-.header.is-stuck .brand img { width: 58px; }
+/* round logo "stamp": larger and slightly overlapping the header bottom; shrinks into the bar when stuck */
+.brand { position: relative; z-index: 2; align-self: flex-start; margin-top: 8px; }
+.brand-badge { width: 84px; height: 84px; border-radius: 50%; border: 3px solid #fff; box-shadow: 0 8px 22px rgba(60,78,18,.28); transition: width .35s var(--ease), height .35s var(--ease), transform .5s var(--ease); }
+.brand:hover .brand-badge { transform: rotate(-8deg) scale(1.04); }
+.header.is-stuck .brand { align-self: center; margin-top: 0; }
+.header.is-stuck .brand-badge { width: 52px; height: 52px; border-width: 2px; }
+.drawer-head .brand-badge { width: 56px; height: 56px; }
+.footer-badge { width: 88px; height: 88px; border-radius: 50%; margin-bottom: 18px; box-shadow: 0 6px 18px rgba(95,122,34,.25); }
 .brand-sep { width: 1px; height: 30px; background: var(--latte); }
 .brand-tag { display: flex; flex-direction: column; line-height: 1.05; }
 .brand-tag b { font-family: var(--font-display); font-weight: 700; font-size: 15px; letter-spacing: .14em; text-transform: uppercase; color: var(--ink); }
@@ -682,7 +688,8 @@ a.tb-item:hover { color: var(--lime); }
   .menu-toggle { display: inline-grid; }
   .header-inner { height: 64px; justify-content: space-between; }
   .brand { position: absolute; left: 50%; transform: translateX(-50%); }
-  .brand img { width: 62px; }
+  .brand, .header.is-stuck .brand { align-self: center; margin-top: 0; }
+  .brand-badge, .header.is-stuck .brand-badge { width: 50px; height: 50px; border-width: 2px; }
   .hero { height: 540px; }
   .hero-title { font-size: 46px; }
   .usp-grid { grid-template-columns: repeat(2, 1fr); row-gap: 18px; }

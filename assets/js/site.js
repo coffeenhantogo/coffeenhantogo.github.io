@@ -84,9 +84,7 @@
         <svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h10" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
       </button>
       <a class="brand" href="${HOME}" aria-label="${S.name} – Trang chủ">
-        <img src="assets/img/nhan-wordmark.png" alt="Nhẫn Coffee" width="70" height="47">
-        <span class="brand-sep" aria-hidden="true"></span>
-        <span class="brand-tag"><b>To Go</b><small>Cà phê phin</small></span>
+        <img class="brand-badge" src="assets/img/logo-badge.png" alt="Logo Coffee Nhẫn To Go – Drink to be happy" width="64" height="64">
       </a>
       <nav class="nav" aria-label="Điều hướng chính">
         <ul>
@@ -110,6 +108,7 @@
   <footer class="footer" id="contact">
     <div class="container footer-grid">
       <div>
+        <img class="footer-badge" src="assets/img/logo-badge.png" alt="Logo Coffee Nhẫn To Go" width="88" height="88" loading="lazy">
         <h3>COFFEE NHẪN TO GO</h3>
         <p>Cà phê pha phin mang đi, cà phê hạt và cà phê rang xay. Pha chậm bằng sự kiên nhẫn – uống để hạnh phúc.</p>
         <img class="footer-slogan" src="assets/img/drink-to-be-happy.png" alt="Drink to be happy" width="210" height="40" loading="lazy">
@@ -142,7 +141,7 @@
   <div class="overlay" data-overlay hidden></div>
   <aside class="drawer drawer-left" id="mobileNav" aria-label="Menu" hidden>
     <div class="drawer-head">
-      <img src="assets/img/nhan-wordmark.png" alt="Nhẫn Coffee" width="66" height="45">
+      <img class="brand-badge" src="assets/img/logo-badge.png" alt="Logo Coffee Nhẫn To Go" width="56" height="56">
       <button class="icon-btn" aria-label="Đóng menu" data-close>&times;</button>
     </div>
     <nav class="mnav">
