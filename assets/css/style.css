@@ -832,12 +832,7 @@ img.img-ready { opacity: 1; transition: opacity .7s ease; }
   transition: transform .55s var(--ease), box-shadow .45s var(--ease);
 }
 .pd-main-img { position: relative; }
-.p-media-wrap::before, .post-media::before, .pd-main-img::before {
-  content: ""; position: absolute; inset: 0; z-index: 3; pointer-events: none; opacity: 0; transition: opacity .35s;
-  background: radial-gradient(circle at var(--mx, 50%) var(--my, 50%), rgba(255,255,255,.38), rgba(255,255,255,0) 48%);
-}
 .tilting { transition: transform .12s linear, box-shadow .45s var(--ease); }
-.tilting::before { opacity: 1; }
 
 /* lime underline that draws in (post titles, footer links) */
 .post h3 a, .links a, .contact a, .p-name a {
