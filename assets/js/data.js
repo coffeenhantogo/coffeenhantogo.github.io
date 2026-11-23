@@ -40,6 +40,14 @@ NHAN.STORE = {
   ],
 };
 
+/* Accounts & order database (Firebase) ----------------------------------
+   Paste the "firebaseConfig" object from Firebase console → Project settings → Your apps → Web.
+   (The web config is public by design; access is protected by firestore.rules.)
+   Leave as null to keep the site working without accounts. */
+NHAN.FIREBASE = null;
+/* Emails allowed to open quan-tri.html (must also be listed in firestore.rules). */
+NHAN.ADMIN_EMAILS = ["coffeenhan178@gmail.com"];
+
 /* Option presets ------------------------------------------------------- */
 const S_SMALL = "Nhỏ 500ml", S_LARGE = "Lớn 700ml";
 const SIZES = [S_SMALL, S_LARGE];

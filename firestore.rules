@@ -1,0 +1,33 @@
+rules_version = '2';
+// Coffee Nhẫn To Go — Firestore security rules.
+// Paste into Firebase console → Firestore Database → Rules → Publish.
+// Admin = verified email listed below (keep in sync with NHAN.ADMIN_EMAILS in assets/js/data.js).
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function signedIn() { return request.auth != null; }
+    function isAdmin() {
+      return signedIn()
+        && request.auth.token.email_verified == true
+        && request.auth.token.email in ['coffeenhan178@gmail.com'];
+    }
+
+    // Customer profiles: each user can read/write only their own document.
+    match /users/{uid} {
+      allow read, write: if (signedIn() && request.auth.uid == uid) || isAdmin();
+    }
+
+    // Orders: anyone may place an order (guests too, uid = null);
+    // members can read their own orders; only the admin can list all and change status.
+    match /orders/{code} {
+      allow create: if request.resource.data.keys().hasAll(['code', 'customer', 'items', 'delivery', 'payment'])
+        && request.resource.data.code == code
+        && request.resource.data.status == 'pending'
+        && request.resource.data.items is list
+        && request.resource.data.items.size() > 0 && request.resource.data.items.size() <= 50
+        && (request.resource.data.uid == null || (signedIn() && request.resource.data.uid == request.auth.uid));
+      allow read: if isAdmin() || (signedIn() && resource.data.uid == request.auth.uid);
+      allow update, delete: if isAdmin();
+    }
+  }
+}

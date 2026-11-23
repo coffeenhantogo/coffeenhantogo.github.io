@@ -19,6 +19,7 @@
     <form class="co-form" novalidate data-form>
       ${N.canSend() ? "" : `<div class="form-alert warn"><b>Chế độ xem thử:</b> bạn đang mở file trực tiếp trên máy, đơn sẽ <b>không</b> được gửi email. Sau khi đặt, hãy dùng nút “Gửi đơn qua Zalo”. Khi website chạy trên mạng (GitHub Pages), đơn sẽ tự gửi về email của quán.</div>`}
       <div class="form-alert err" data-error hidden></div>
+      <div class="co-member" data-member hidden></div>
 
       <div class="co-card" data-reveal="up">
         <h2><span class="step">1</span> Thông tin người nhận</h2>
@@ -187,10 +188,32 @@
       order.status = "unsent";
       order.error = String(err && err.message || err);
     }
+    // also store the order in the shop database (accounts/admin), max 6s so checkout never hangs
+    try {
+      const api = await N.fbReady;
+      if (api) await Promise.race([api.saveOrder(order), new Promise((_, rej) => setTimeout(() => rej(new Error("timeout")), 6000))]);
+      order.synced = !!api;
+    } catch (err) { order.synced = false; console.warn("order sync failed", err); }
     N.orders.save(order);
     N.cart.clear();
     location.href = `dat-hang-thanh-cong.html?ma=${encodeURIComponent(order.code)}`;
   }
+  // accounts: banner + prefill from profile
+  N.fbReady.then(async (api) => {
+    const box = root.querySelector("[data-member]");
+    if (!api || !box) return;
+    if (!api.user) {
+      box.innerHTML = `<span>Đã có tài khoản? <a href="dang-nhap.html?next=thanh-toan.html">Đăng nhập</a> để điền sẵn thông tin và theo dõi đơn.</span>`;
+      box.hidden = false; return;
+    }
+    box.innerHTML = `<span>Đang đặt hàng với tài khoản <b>${N.esc(api.user.displayName || api.user.email)}</b> – đơn sẽ được lưu vào <a href="tai-khoan.html">Tài khoản của tôi</a>.</span>`;
+    box.hidden = false;
+    const p = (await api.getProfile().catch(() => null)) || {};
+    const fill = (n, v) => { if (v && form[n] && !form[n].value) form[n].value = v; };
+    fill("name", p.name || api.user.displayName); fill("phone", p.phone); fill("email", p.email || api.user.email); fill("address", p.address);
+    if (p.branch) form.querySelectorAll('input[name="branch"]').forEach((r) => (r.checked = r.value === p.branch));
+  });
+
   submitBtn.addEventListener("click", submit);
   form.addEventListener("submit", (e) => { e.preventDefault(); submit(); });
   root.querySelectorAll("[data-reveal]").forEach((el, i) => { el.style.setProperty("--i", i % 4); N.anim([el], el.dataset.reveal, { stagger: false }); });

@@ -54,6 +54,7 @@
     plus: '<svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/></svg>',
     receipt: '<svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M6 3h12v18l-3-2-3 2-3-2-3 2z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/><path d="M9 8h6M9 12h6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>',
   };
+  IC.user = '<svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><circle cx="12" cy="8.5" r="4" fill="none" stroke="currentColor" stroke-width="2"/><path d="M4.5 20.5c1.2-3.6 4-5.5 7.5-5.5s6.3 1.9 7.5 5.5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>';
   N.IC = IC;
 
   /* ---------- layout: header / footer / overlays ---------- */
@@ -103,6 +104,7 @@
       <div class="header-actions">
         <button class="icon-btn round hb-search" data-tip="Tìm kiếm" aria-label="Tìm kiếm sản phẩm" data-open="searchModal">${IC.search}</button>
         <a class="icon-btn round hide-sm hb-orders" data-tip="Đơn hàng" href="don-hang.html" aria-label="Đơn hàng của tôi">${IC.receipt}</a>
+        <a class="icon-btn round hb-user" data-tip="Đăng nhập" href="dang-nhap.html" aria-label="Đăng nhập / Tài khoản" data-account-link>${IC.user}</a>
         <button class="icon-btn round cart-btn" data-tip="Giỏ hàng" aria-label="Giỏ hàng" data-open="cartDrawer">${IC.bag}<span class="cart-count" data-cart-count hidden>0</span></button>
         <a class="btn-order" href="thuc-don.html">${IC.phone.replace("<svg", '<svg width="16" height="16"')} Đặt hàng</a>
       </div>
@@ -190,6 +192,7 @@
     <nav class="mnav">
       ${NAV.map((n) => `<a href="${n.href}" class="${isCurrent(n.key) ? "is-current" : ""}">${n.label}</a>`).join("")}
       <a href="don-hang.html">Đơn hàng của tôi</a>
+      <a href="dang-nhap.html" data-account-mlink>Đăng nhập / Đăng ký</a>
       <a class="btn btn-lime" href="tel:${S.phone}">Gọi ${S.phoneDisplay}</a>
     </nav>
   </aside>
@@ -521,6 +524,36 @@
   const onScroll = () => header.classList.toggle("is-stuck", scrollY > 40);
   addEventListener("scroll", onScroll, { passive: true });
   onScroll();
+
+  /* ---------- accounts (Firebase, loaded only when configured) ---------- */
+  N.fbReady = new Promise((res) => (N._fbResolve = res));
+  if (N.FIREBASE && N.FIREBASE.apiKey) {
+    const me = [...document.scripts].find((s) => /assets\/js\/site\.js/.test(s.src));
+    const ver = me && me.src.includes("?") ? me.src.slice(me.src.indexOf("?")) : "";
+    const s = document.createElement("script");
+    s.src = `assets/js/auth.js${ver}`;
+    document.body.appendChild(s);
+  } else N._fbResolve(null);
+  N.updateAccountUI = (u, api) => {
+    const first = u ? (u.displayName || u.email || "?").trim() : "";
+    document.querySelectorAll("[data-account-link]").forEach((a) => {
+      if (u) {
+        a.href = "tai-khoan.html";
+        a.dataset.tip = api && api.isAdmin(u) ? "Quản trị" : "Tài khoản";
+        a.classList.add("is-in");
+        a.innerHTML = `<span class="hb-avatar">${esc(first.charAt(0).toUpperCase())}</span>`;
+      } else {
+        a.href = "dang-nhap.html"; a.dataset.tip = "Đăng nhập"; a.classList.remove("is-in"); a.innerHTML = IC.user;
+      }
+    });
+    document.querySelectorAll("[data-account-mlink]").forEach((a) => {
+      a.href = u ? "tai-khoan.html" : "dang-nhap.html";
+      a.textContent = u ? `Tài khoản (${first.split(/[\s@]/)[0]})` : "Đăng nhập / Đăng ký";
+    });
+  };
+  N.requireConfig = (root) => {
+    root.innerHTML = `<div class="co-card" style="max-width:620px;margin:0 auto;text-align:center"><div class="cart-empty-ic">${IC.user.replace('width="20" height="20"', 'width="34" height="34"')}</div><h2 style="font-size:22px;color:var(--brown);font-weight:800">Tính năng tài khoản đang được thiết lập</h2><p style="color:var(--muted);margin:8px 0 18px">Bạn vẫn có thể đặt hàng bình thường mà không cần tài khoản.</p><a class="btn btn-lime" href="thuc-don.html">Đặt món ngay</a></div>`;
+  };
 
   /* ---------- motion polish ---------- */
   const FINE = matchMedia("(hover: hover) and (pointer: fine)").matches;
