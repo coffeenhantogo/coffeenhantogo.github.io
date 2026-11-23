@@ -393,6 +393,32 @@ a.tb-item:hover { color: var(--lime); }
    INNER PAGES
    ========================================================= */
 .section-more { text-align: center; margin-top: 40px; }
+
+/* home: ground coffee feature cards (2 large horizontal cards) */
+.feature-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 28px; }
+.feature-card { display: grid; grid-template-columns: 46% 1fr; gap: 26px; align-items: center; padding: 18px; border-radius: 22px; background: var(--crema); border: 1px solid var(--latte); transition: box-shadow .4s var(--ease), transform .4s var(--ease); }
+.feature-card:hover { box-shadow: var(--shadow); transform: translateY(-4px); }
+.feature-media { display: block; border-radius: 16px; overflow: hidden; }
+.feature-media img { width: 100%; height: 100%; object-fit: cover; transition: transform .7s var(--ease); }
+.feature-card:hover .feature-media img { transform: scale(1.06); }
+.feature-body h3 { margin-top: 4px; font-family: var(--font-display); font-size: 24px; font-weight: 700; line-height: 1.25; color: var(--brown); }
+.feature-short { margin-top: 8px; font-size: 15px; color: #6d5446; line-height: 1.55; }
+.feature-price { margin-top: 14px; font-size: 26px; font-weight: 900; color: var(--ink); }
+.feature-actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 16px; }
+
+/* menu: price board */
+.price-board { margin-top: 70px; padding: 32px; border-radius: 22px; background: var(--crema); border: 1px solid var(--latte); }
+.price-board h2 { font-size: 26px; font-weight: 800; color: var(--brown); }
+.price-board > p { color: var(--muted); margin-top: 4px; }
+.price-table { width: 100%; border-collapse: collapse; margin-top: 18px; font-size: 15.5px; }
+.price-table th { text-align: left; font-size: 12.5px; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); font-weight: 800; padding: 10px 12px; border-bottom: 2px solid var(--latte); }
+.price-table th:not(:first-child), .price-table td:not(:first-child) { text-align: right; white-space: nowrap; }
+.price-table td { padding: 12px; border-bottom: 1px dashed var(--latte); color: var(--brown); }
+.price-table td b { color: var(--ink); font-weight: 900; }
+.price-table td a { font-weight: 800; }
+.price-table td a:hover { color: var(--lime-deep); }
+.price-table .na { color: var(--muted); }
+.price-table tr.grp td { padding-top: 22px; font-size: 13px; letter-spacing: .14em; text-transform: uppercase; font-weight: 900; color: var(--lime-deep); border-bottom: 0; }
 .section-title.no-bar::after { display: none; }
 .post-meta { margin-top: 16px; font-size: 13px; font-weight: 700; color: var(--muted); }
 .post-meta + h3 { margin-top: 6px; }
@@ -704,6 +730,7 @@ a.tb-item:hover { color: var(--lime); }
   .stores-grid { grid-template-columns: 1fr; }
   .store-map { min-height: 340px; }
   .grid-4 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .feature-grid { grid-template-columns: 1fr; }
   .pd-grid, .split, .contact-grid { grid-template-columns: 1fr; gap: 32px; }
   .cart-layout, .co-layout { grid-template-columns: 1fr; }
   .summary { position: static; }
@@ -745,6 +772,16 @@ a.tb-item:hover { color: var(--lime); }
   .footer-grid { grid-template-columns: 1fr; gap: 28px; }
   .float-btn { width: 50px; height: 50px; }
   .hide-sm { display: none !important; }
+  .feature-grid { grid-template-columns: 1fr; gap: 18px; }
+  .feature-card { grid-template-columns: 40% 1fr; gap: 14px; padding: 12px; align-items: start; }
+  .feature-body h3 { font-size: 17px; }
+  .feature-short { font-size: 13.5px; margin-top: 4px; }
+  .feature-price { font-size: 19px; margin-top: 8px; }
+  .feature-actions { margin-top: 10px; gap: 6px; }
+  .feature-actions .btn-sm { height: 40px; padding: 0 12px; font-size: 11.5px; }
+  .price-board { padding: 20px 14px; margin-top: 50px; }
+  .price-table { font-size: 14px; }
+  .price-table th, .price-table td { padding: 10px 6px; }
   .page-hero { padding: 48px 0 44px; }
   .page-hero h1 { font-size: 32px; }
   .page-hero p { font-size: 15.5px; }

@@ -77,7 +77,7 @@
       <div class="sum-row total"><span>Tổng cộng</span><b data-total></b></div>
       <button class="btn btn-lime btn-block" type="submit" form="" data-submit>Xác nhận đặt hàng</button>
       <a class="btn btn-outline btn-block" href="gio-hang.html" style="margin-top:10px">Sửa giỏ hàng</a>
-      <p class="note">Sau khi đặt, Nhẫn sẽ gọi hoặc nhắn Zalo cho bạn để xác nhận đơn và báo giá trong giờ mở cửa.</p>
+      <p class="note">Sau khi đặt, Nhẫn sẽ gọi hoặc nhắn Zalo cho bạn để xác nhận đơn (và báo phí giao hàng nếu giao tận nơi).</p>
     </aside>
   </div>`;
 

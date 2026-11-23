@@ -32,7 +32,7 @@
         <h1>${sent ? "Đặt hàng thành công!" : "Đã ghi nhận đơn hàng"}</h1>
         <div class="order-code">Mã đơn: ${N.esc(o.code)}</div>
         ${sent
-          ? `<p class="lead">Cảm ơn ${N.esc(o.customer.name)}! Đơn đã được gửi tới Nhẫn. Nhân viên sẽ gọi hoặc nhắn Zalo tới <b>${N.esc(o.customer.phone)}</b> để xác nhận và báo giá. Bạn có thể gửi thêm qua Zalo để được xử lý nhanh hơn.</p>`
+          ? `<p class="lead">Cảm ơn ${N.esc(o.customer.name)}! Đơn đã được gửi tới Nhẫn. Nhân viên sẽ gọi hoặc nhắn Zalo tới <b>${N.esc(o.customer.phone)}</b> để xác nhận đơn. Bạn có thể gửi thêm qua Zalo để được xử lý nhanh hơn.</p>`
           : `<div class="form-alert warn" style="margin-top:16px;text-align:left">${N.canSend() ? "Không gửi được đơn tự động (mạng chập chờn hoặc hệ thống email chưa kích hoạt)." : "Bạn đang xem thử trên máy nên đơn chưa được gửi email."} <b>Vui lòng bấm “Gửi đơn qua Zalo”</b> hoặc gọi ${S.phoneDisplay} để Nhẫn nhận đơn.</div>`}
         <div class="order-detail">${detailRows(o)}</div>
         <div class="success-actions">

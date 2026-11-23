@@ -3,26 +3,31 @@
   const N = window.NHAN;
 
   /* product grids */
-  const beansGrid = document.querySelector('[data-grid="beans"]');
-  const renderBeans = (group) => {
-    const type = group === "hat" ? "bean" : "ground";
-    beansGrid.innerHTML = N.PRODUCTS.filter((p) => p.type === type).slice(0, 5).map(N.card).join("");
-    N.anim(beansGrid.querySelectorAll(".p-card"), "up");
-  };
-  renderBeans("rang-xay");
+  const groundGrid = document.querySelector('[data-grid="ground"]');
+  groundGrid.innerHTML = N.PRODUCTS.filter((p) => p.type === "ground").map((p) => `
+    <article class="feature-card">
+      <a class="feature-media p-media-wrap" href="${N.productUrl(p)}" aria-label="${N.esc(p.name)}">
+        ${p.badge ? `<span class="p-badge">${N.esc(p.badge)}</span>` : ""}
+        <span class="p-media"><img src="${N.img(p.img)}" alt="${N.esc(p.name)}" loading="lazy"></span>
+      </a>
+      <div class="feature-body">
+        <p class="p-cat">${N.esc(p.cat)}</p>
+        <h3><a href="${N.productUrl(p)}">${N.esc(p.name)}</a></h3>
+        <p class="feature-short">${N.esc(p.short)}</p>
+        <p class="feature-price">${N.priceText(p)}</p>
+        <div class="feature-actions">
+          <button class="btn btn-lime btn-sm" type="button" data-add="${p.id}">${N.IC.plus} Thêm vào giỏ</button>
+          <a class="btn btn-outline btn-sm" href="${N.productUrl(p)}">Chi tiết</a>
+        </div>
+      </div>
+    </article>`).join("");
+  N.anim(groundGrid.querySelectorAll(".feature-card"), "up");
   const drinksGrid = document.querySelector('[data-grid="drinks"]');
   drinksGrid.innerHTML = N.PRODUCTS.filter((p) => p.type === "drink" && p.featured).slice(0, 5).map(N.card).join("");
   N.anim(drinksGrid.querySelectorAll(".p-card"), "up");
   const postsGrid = document.querySelector('[data-grid="posts"]');
   postsGrid.innerHTML = N.ARTICLES.slice(0, 3).map(N.postCard).join("");
 
-  /* tabs */
-  const title = document.querySelector("[data-products-title]");
-  document.querySelectorAll("[data-tab]").forEach((t) => t.addEventListener("click", () => {
-    document.querySelectorAll("[data-tab]").forEach((x) => { const on = x === t; x.classList.toggle("is-active", on); x.setAttribute("aria-selected", on); });
-    title.textContent = t.dataset.tab === "hat" ? "Cà Phê Hạt" : "Cà Phê Rang Xay";
-    renderBeans(t.dataset.tab);
-  }));
 
   /* hero carousel */
   const slides = [...document.querySelectorAll("[data-slide]")];

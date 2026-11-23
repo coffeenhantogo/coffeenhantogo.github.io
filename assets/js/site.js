@@ -29,7 +29,12 @@
     if (p.priceBy) { for (const v of Object.values(opts)) if (p.priceBy[v] != null) return p.priceBy[v]; }
     return p.price ?? null;
   };
-  const priceText = (p, opts) => { const v = unitPrice(p, opts); return v == null ? "Liên hệ" : fmtVND(v); };
+  const priceText = (p, opts) => {
+    const v = unitPrice(p, opts);
+    if (v != null) return fmtVND(v);
+    if (!opts && p.priceBy) { const vals = Object.values(p.priceBy); return `Từ ${fmtVND(Math.min(...vals))}`; }
+    return "Liên hệ";
+  };
   const norm = (s) => String(s).normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/đ/g, "d").replace(/Đ/g, "D").toLowerCase();
   const optSummary = (opts = {}) => Object.values(opts).filter(Boolean).join(" · ");
   const store = {
@@ -56,8 +61,8 @@
     { href: HOME, label: "Trang chủ", key: "home" },
     { href: "thuc-don.html", label: "Thực đơn", key: "menu" },
     { href: "san-pham.html", label: "Sản phẩm", key: "shop", sub: [
-      { href: "san-pham.html?loai=rang-xay", label: "Cà phê rang xay" },
-      { href: "san-pham.html?loai=hat", label: "Cà phê hạt nguyên" },
+      { href: "san-pham.html?loai=ca-phe-xay", label: "Cà phê xay (gói 1kg)" },
+      { href: "san-pham.html?loai=tra-sua", label: "Trà sữa & sữa" },
       { href: "thuc-don.html", label: "Đồ uống pha sẵn" },
     ] },
     { href: "bai-viet.html", label: "Bài viết", key: "blog" },
@@ -110,15 +115,15 @@
       <div>
         <img class="footer-badge" src="assets/img/logo-badge.png" alt="Logo Coffee Nhẫn To Go" width="88" height="88" loading="lazy">
         <h3>COFFEE NHẪN TO GO</h3>
-        <p>Cà phê pha phin mang đi, cà phê hạt và cà phê rang xay. Pha chậm bằng sự kiên nhẫn – uống để hạnh phúc.</p>
+        <p>Cà phê Moka, bạc xỉu, trà sữa mang đi và cà phê xay gói 1kg. Pha chậm bằng sự kiên nhẫn – uống để hạnh phúc.</p>
         <img class="footer-slogan" src="assets/img/drink-to-be-happy.png" alt="Drink to be happy" width="210" height="40" loading="lazy">
       </div>
       <div>
         <h3>LIÊN KẾT</h3>
         <ul class="links">
           <li><a href="thuc-don.html">Thực Đơn Đồ Uống</a></li>
-          <li><a href="san-pham.html?loai=hat">Cà Phê Hạt</a></li>
-          <li><a href="san-pham.html?loai=rang-xay">Cà Phê Rang Xay</a></li>
+          <li><a href="san-pham.html">Tất Cả Sản Phẩm</a></li>
+          <li><a href="san-pham.html?loai=ca-phe-xay">Cà Phê Xay 1kg</a></li>
           <li><a href="don-hang.html">Đơn Hàng Của Tôi</a></li>
           <li><a href="chinh-sach.html">Chính Sách Mua Hàng</a></li>
         </ul>
@@ -158,7 +163,7 @@
     <div class="cart-body" data-cart-body></div>
     <div class="cart-foot" data-cart-foot>
       <div class="cart-total"><span>Tạm tính</span><b data-cart-total>0 ₫</b></div>
-      <p class="cart-note">Giá được nhân viên báo khi xác nhận đơn (kèm phí giao hàng nếu có).</p>
+      <p class="cart-note">Phí giao hàng (nếu có) được nhân viên báo khi xác nhận đơn.</p>
       <a class="btn btn-lime btn-block" href="thanh-toan.html">Tiến hành đặt hàng</a>
       <a class="btn btn-outline btn-block" href="gio-hang.html">Xem giỏ hàng</a>
     </div>
@@ -346,7 +351,7 @@
     const a = e.target.closest("[data-add]");
     if (a) {
       e.preventDefault();
-      const src = a.closest(".p-card, li")?.querySelector(".p-media img, .c-thumb img");
+      const src = a.closest(".p-card, .feature-card, li")?.querySelector(".p-media img, .c-thumb img");
       N.pick(a.dataset.add, src);
     }
   });

@@ -12,7 +12,7 @@
 
   const isDrink = p.type === "drink";
   const listUrl = isDrink ? "thuc-don.html" : `san-pham.html?loai=${p.group}`;
-  const listName = isDrink ? "Thực đơn" : p.type === "bean" ? "Cà phê hạt" : "Cà phê rang xay";
+  const listName = isDrink ? "Thực đơn" : "Cà phê xay";
   const gallery = p.gallery && p.gallery.length ? p.gallery : [p.img];
 
   document.title = `${p.name} | Coffee Nhẫn To Go`;
@@ -29,8 +29,8 @@
   document.head.appendChild(ld);
 
   const howTo = isDrink
-    ? `<ul><li>Chọn size, độ ngọt, lượng đá theo khẩu vị trước khi thêm vào giỏ.</li><li>Đồ uống được pha khi nhân viên xác nhận đơn để đảm bảo độ tươi ngon.</li><li>Nên dùng trong vòng 1–2 giờ sau khi pha; với món đá, uống ngay để không bị nhạt.</li></ul>`
-    : `<ul><li>Pha phin: khoảng 20–25g cà phê cho một ly, ủ 20–30 giây rồi châm nước sôi khoảng 90–96°C.</li><li>Pha máy: chọn độ xay “pha máy”, khoảng 18g cho một shot đôi.</li><li>Pour-over / French press: chọn độ xay tương ứng, tỉ lệ tham khảo 1:15 (cà phê : nước).</li><li>Bảo quản trong túi kín, nơi khô ráo thoáng mát, tránh ánh nắng; dùng ngon nhất trong vài tuần sau khi mở túi.</li></ul>
+    ? `<ul><li>Chọn size (Nhỏ 500ml / Lớn 700ml), độ ngọt, lượng đá theo khẩu vị trước khi thêm vào giỏ.</li><li>Đồ uống được pha khi nhân viên xác nhận đơn để đảm bảo độ tươi ngon.</li><li>Nên dùng trong vòng 1–2 giờ sau khi pha; với món đá, uống ngay để không bị nhạt.</li></ul>`
+    : `<ul><li>Pha phin: khoảng 20–25g cà phê cho một ly, ủ 20–30 giây rồi châm nước sôi khoảng 90–96°C.</li><li>Gói 1kg nên chia ra vài hũ nhỏ đậy kín, dùng hết hũ này mới mở hũ khác.</li><li>Bảo quản nơi khô ráo thoáng mát, tránh ánh nắng và nơi có mùi mạnh.</li><li>Mua số lượng lớn cho quán: gọi hoặc nhắn Zalo để được tư vấn.</li></ul>
        <p><a href="bai-viet-chi-tiet.html?slug=bi-quyet-pha-ca-phe-phin" style="color:var(--lime-deep);font-weight:800">Đọc hướng dẫn pha phin chi tiết →</a></p>`;
 
   root.innerHTML = `
@@ -43,7 +43,7 @@
       <div class="pd-info" data-reveal="right">
         <p class="p-cat">${N.esc(p.cat)}${p.badge ? ` · ${N.esc(p.badge)}` : ""}</p>
         <h1>${N.esc(p.name)}</h1>
-        <p class="pd-price" data-price>${N.priceText(p)}<small>${N.unitPrice(p) == null ? "Nhân viên báo giá khi xác nhận đơn" : ""}</small></p>
+        <p class="pd-price" data-price>${N.priceText(p, N.defaultOpts(p))}<small>${N.unitPrice(p, N.defaultOpts(p)) == null ? "Nhân viên báo giá khi xác nhận đơn" : p.priceBy ? "Giá theo size bạn chọn" : ""}</small></p>
         <p class="pd-short">${N.esc(p.short)}</p>
         <div class="pd-tags">${(p.notes || []).map((t) => `<span class="lime">${N.esc(t)}</span>`).join("")}${p.roast ? `<span>${N.esc(p.roast)}</span>` : ""}${p.bean ? `<span>${N.esc(p.bean)}</span>` : ""}</div>
         <form data-buy>
@@ -70,7 +70,7 @@
       <div class="pd-panel" data-panel="desc"><p>${N.esc(p.desc)}</p></div>
       <div class="pd-panel" data-panel="how" hidden>${howTo}</div>
       <div class="pd-panel" data-panel="ship" hidden>
-        <ul><li>Nhận tại quán: 351 Minh Phụng hoặc 26B/4 Lạc Long Quân – đặt trước, ghé lấy không cần chờ.</li><li>Giao hàng: nhân viên gọi xác nhận đơn, báo giá và phí giao trước khi giao.</li><li>Sản phẩm lỗi do đóng gói/vận chuyển được đổi mới. Xem chi tiết tại <a href="chinh-sach.html" style="color:var(--lime-deep);font-weight:800">Chính sách mua hàng</a>.</li></ul>
+        <ul><li>Nhận tại quán: 351 Minh Phụng hoặc 26B/4 Lạc Long Quân – đặt trước, ghé lấy không cần chờ.</li><li>Giao hàng: nhân viên gọi xác nhận đơn và báo phí giao (nếu có) trước khi giao.</li><li>Sản phẩm lỗi do đóng gói/vận chuyển được đổi mới. Xem chi tiết tại <a href="chinh-sach.html" style="color:var(--lime-deep);font-weight:800">Chính sách mua hàng</a>.</li></ul>
       </div>
     </div>`;
 
@@ -100,7 +100,8 @@
   root.querySelectorAll("[data-reveal]").forEach((el) => N.anim([el], el.dataset.reveal, { stagger: false }));
 
   // related
-  const rel = N.PRODUCTS.filter((x) => x.id !== p.id && x.type === p.type).slice(0, 4);
+  const others = N.PRODUCTS.filter((x) => x.id !== p.id);
+  const rel = [...others.filter((x) => x.type === p.type), ...others.filter((x) => x.type !== p.type && x.featured)].slice(0, 4);
   document.querySelector("[data-related]").innerHTML = rel.map(N.card).join("");
   N.anim(document.querySelectorAll("[data-related] .p-card"), "up", { mod: 4 });
   N.anim(".related .section-head", "blur", { stagger: false });
