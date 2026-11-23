@@ -511,7 +511,17 @@
 
   // header shrink
   const header = document.querySelector(".header");
-  const onScroll = () => header.classList.toggle("is-stuck", scrollY > 40);
+  // smart sticky: hide while scrolling down, reveal on scroll up
+  let lastY = scrollY;
+  const onScroll = () => {
+    const y = scrollY, dy = y - lastY;
+    header.classList.toggle("is-stuck", y > 40);
+    const busy = document.body.style.overflow === "hidden" || header.matches(":hover") || header.contains(document.activeElement);
+    if (y < 160 || busy || STATIC || reduced) header.classList.remove("is-hidden");
+    else if (dy > 6) header.classList.add("is-hidden");
+    else if (dy < -6) header.classList.remove("is-hidden");
+    lastY = y;
+  };
   addEventListener("scroll", onScroll, { passive: true });
   onScroll();
 
@@ -526,6 +536,7 @@
     const current = links.find((a) => a.classList.contains("is-current"));
     const moveTo = (a, instant) => {
       if (!a) { ink.style.opacity = "0"; return; }
+      if (ink.style.opacity !== "1") instant = true; // first hover: appear in place, then glide between items
       const r = a.getBoundingClientRect(), p = ul.getBoundingClientRect();
       if (instant) ink.style.transition = "none";
       ink.style.width = `${r.width}px`;
@@ -535,8 +546,8 @@
     };
     links.forEach((a) => a.addEventListener("mouseenter", () => moveTo(a)));
     links.forEach((a) => a.addEventListener("focus", () => moveTo(a)));
-    ul.addEventListener("mouseleave", () => moveTo(current));
-    const place = () => moveTo(current, true);
+    ul.addEventListener("mouseleave", () => moveTo(null));
+    const place = () => moveTo(null, true);
     (document.fonts && document.fonts.ready ? document.fonts.ready : Promise.resolve()).then(place);
     addEventListener("resize", place);
     setTimeout(place, 50);

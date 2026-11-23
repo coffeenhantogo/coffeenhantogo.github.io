@@ -1249,8 +1249,49 @@ img.img-ready { opacity: 1; transition: opacity .7s ease; }
   .brand-badge, .header.is-stuck .brand-badge { width: 44px; height: 44px; }
 }
 
+/* =========================================================
+   HEADER v3.1 — refined white capsule
+   ========================================================= */
+.header { transition: transform .45s cubic-bezier(.22,1,.36,1), padding .35s var(--ease); will-change: transform; }
+.header.is-hidden { transform: translateY(-120%); }
+.header-inner {
+  height: 70px; padding: 0 8px 0 9px; background: rgba(255,255,255,.92);
+  border: 1px solid rgba(86,49,33,.07);
+  box-shadow: 0 1px 2px rgba(42,26,16,.04), 0 6px 16px rgba(42,26,16,.05), 0 18px 40px -12px rgba(42,26,16,.10);
+}
+.js-anim .header-inner { animation: capsuleIn .8s cubic-bezier(.22,1,.36,1) both; }
+@keyframes capsuleIn { from { opacity: 0; transform: translateY(-18px) scale(.98); } }
+.header.is-stuck .header-inner { height: 62px; background: rgba(255,255,255,.88); box-shadow: 0 1px 2px rgba(42,26,16,.05), 0 12px 32px -6px rgba(42,26,16,.18); }
+
+/* logo */
+.brand-badge { width: 52px; height: 52px; border: 2px solid #fff; box-shadow: 0 0 0 1px rgba(86,49,33,.08), 0 6px 14px rgba(60,78,18,.22); transition: transform .6s cubic-bezier(.34,1.56,.64,1), width .35s, height .35s; }
+.brand:hover .brand-badge { transform: rotate(-10deg) scale(1.06); }
+.header.is-stuck .brand-badge { width: 46px; height: 46px; }
+
+/* nav: clean, sliding lime-soft pill on hover, lime dot for current page */
+.nav > ul { background: transparent; padding: 0; gap: 2px; }
+.nav > ul > li > a { padding: 10px 16px; font-size: 13px; font-weight: 800; letter-spacing: .08em; color: rgba(86,49,33,.88); transition: color .25s; }
+.nav > ul > li > a:hover { color: var(--ink); }
+.nav > ul > li > a.is-current { color: var(--ink); }
+.nav > ul > li > a.is-current::before { content: ""; position: absolute; left: 50%; bottom: 3px; width: 5px; height: 5px; margin-left: -2.5px; border-radius: 50%; background: var(--lime-dark); }
+.nav-ink { top: 0; bottom: 0; background: var(--lime-soft); box-shadow: none; }
+.nav-ink::after { display: none; }
+
+/* actions */
+.ha-group { background: transparent; padding: 0; gap: 2px; position: relative; padding-right: 12px; margin-right: 2px; }
+.ha-group::after { content: ""; position: absolute; right: 0; top: 50%; height: 24px; margin-top: -12px; width: 1px; background: rgba(86,49,33,.14); }
+.ha-group .icon-btn { width: 42px; height: 42px; color: var(--brown); }
+.btn-order { height: 46px; background: var(--ink); box-shadow: 0 6px 16px rgba(17,17,17,.18); }
+.btn-order:hover { background: var(--ink); box-shadow: 0 10px 24px rgba(17,17,17,.26); }
+
+@media (max-width: 1024px) {
+  .ha-group { padding-right: 0; }
+  .ha-group::after { display: none; }
+}
+
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; }
+  .header.is-hidden { transform: none; }
   .slide .hero-title .w, .js-anim .section-head .section-title .w { opacity: 1 !important; transform: none !important; }
   .p-media-wrap, .post-media, .pd-main-img { transform: none !important; }
   img.img-wait { opacity: 1 !important; }
