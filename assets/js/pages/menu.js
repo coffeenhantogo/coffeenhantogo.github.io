@@ -30,7 +30,7 @@
     menuEl.innerHTML = groups.length
       ? groups.map((g) => `
         <div class="menu-group">
-          <div class="menu-group-head"><h2>${g.title}</h2><p>${g.desc}</p></div>
+          <div class="menu-group-head"><span class="mg-no">0${GROUPS.findIndex((x) => x.key === g.key) + 1}</span><div class="mg-text"><h2>${g.title}</h2><p>${g.desc}</p></div><span class="mg-count">${g.items.length} món</span></div>
           <div class="grid-4">${g.items.map(cardWithShort).join("")}</div>
         </div>`).join("")
       : `<div class="empty-state"><b>Không tìm thấy món phù hợp</b>Thử từ khóa khác hoặc gọi ${N.STORE.phoneDisplay} để được tư vấn.</div>`;

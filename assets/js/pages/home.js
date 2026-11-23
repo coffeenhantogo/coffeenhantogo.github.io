@@ -14,7 +14,8 @@
         <p class="p-cat">${N.esc(p.cat)}</p>
         <h3><a href="${N.productUrl(p)}">${N.esc(p.name)}</a></h3>
         <p class="feature-short">${N.esc(p.short)}</p>
-        <p class="feature-price">${N.priceText(p)}</p>
+        <ul class="feature-points"><li>Đóng gói 1kg</li><li>Nhận tại quán hoặc giao tận nơi</li><li>Đặt online hoặc qua Zalo</li></ul>
+        <p class="feature-price"><small>Giá</small>${N.priceText(p)}</p>
         <div class="feature-actions">
           <button class="btn btn-lime btn-sm" type="button" data-add="${p.id}">${N.IC.plus} Thêm vào giỏ</button>
           <a class="btn btn-outline btn-sm" href="${N.productUrl(p)}">Chi tiết</a>
