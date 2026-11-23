@@ -51,7 +51,7 @@
     else list = list.slice().sort((a, b) => (b.featured ? 1 : 0) - (a.featured ? 1 : 0));
     countEl.textContent = `${list.length} sản phẩm`;
     grid.innerHTML = list.length
-      ? list.map((p) => N.card(p).replace('<p class="p-price">', `<p class="p-short">${N.esc(p.short)}</p><p class="p-price">`)).join("")
+      ? list.map(N.card).join("")
       : `<div class="empty-state"><b>Không có sản phẩm phù hợp</b>Hãy thử từ khóa khác.</div>`;
     N.anim(grid.querySelectorAll(".p-card"), "up", { mod: 4 });
     syncUrl();

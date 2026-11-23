@@ -357,17 +357,31 @@
   });
 
   /* ---------- product card ---------- */
+  const sizesLabel = (p) => {
+    const s = p.options && p.options.size;
+    if (s && s.length) return s.map((x) => x.replace(/^(Nhỏ|Lớn)\s*/, "")).join(" · ");
+    if (p.type === "ground") return "Gói 1kg";
+    return "";
+  };
+  const priceBox = (p) => {
+    if (p.priceBy) return `<small>Từ</small><b>${fmtVND(Math.min(...Object.values(p.priceBy)))}</b>`;
+    if (p.price != null) return `<small>Giá</small><b>${fmtVND(p.price)}</b>`;
+    return `<small>Giá</small><b>Liên hệ</b>`;
+  };
   N.card = (p) => `<article class="p-card">
-      <div class="p-media-wrap">
-        <a class="p-media" href="${productUrl(p)}" aria-label="${esc(p.name)}">
-          ${p.badge ? `<span class="p-badge">${esc(p.badge)}</span>` : ""}
-          <img src="${img(p.img)}" alt="${esc(p.name)}" loading="lazy">
-        </a>
-        <button class="p-add" type="button" data-add="${p.id}" aria-label="Thêm ${esc(p.name)} vào giỏ">${IC.plus}Thêm vào giỏ</button>
+      <a class="p-media-wrap" href="${productUrl(p)}" aria-label="${esc(p.name)}">
+        ${p.badge ? `<span class="p-badge">${esc(p.badge)}</span>` : ""}
+        <span class="p-media"><img src="${img(p.img)}" alt="${esc(p.name)}" loading="lazy"></span>
+      </a>
+      <div class="p-body">
+        <div class="p-meta"><span class="p-cat">${esc(p.cat)}</span>${sizesLabel(p) ? `<span class="p-sizes">${esc(sizesLabel(p))}</span>` : ""}</div>
+        <h3 class="p-name"><a href="${productUrl(p)}">${esc(p.name)}</a></h3>
+        ${p.short ? `<p class="p-desc">${esc(p.short)}</p>` : ""}
+        <div class="p-foot">
+          <div class="p-pricebox">${priceBox(p)}</div>
+          <button class="p-add" type="button" data-add="${p.id}" aria-label="Thêm ${esc(p.name)} vào giỏ">${IC.plus}</button>
+        </div>
       </div>
-      <p class="p-cat">${esc(p.cat)}</p>
-      <h3 class="p-name"><a href="${productUrl(p)}">${esc(p.name)}</a></h3>
-      <p class="p-price">${priceText(p)}</p>
     </article>`;
 
   N.postCard = (a) => `<article class="post">

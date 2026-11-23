@@ -18,7 +18,7 @@
     return `<button class="fchip" role="tab" data-g="${g.key}">${g.title}<small>${n}</small></button>`;
   }).join("");
 
-  const cardWithShort = (p) => N.card(p).replace('<p class="p-price">', `<p class="p-short">${N.esc(p.short)}</p><p class="p-price">`);
+  const cardWithShort = N.card;
 
   function render() {
     filtersEl.querySelectorAll(".fchip").forEach((c) => { const on = c.dataset.g === active; c.classList.toggle("is-active", on); c.setAttribute("aria-selected", on); });
