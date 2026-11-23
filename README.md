@@ -1,7 +1,7 @@
 # Coffee Nhẫn To Go – Website
 
 Website bán hàng của **Coffee Nhẫn To Go** (cà phê pha phin mang đi, cà phê hạt, cà phê rang xay).
-Là trang tĩnh HTML/CSS/JS, không cần máy chủ, chạy trên **GitHub Pages**.
+Là trang tĩnh HTML/CSS/JS, không cần máy chủ, chạy trên **GitHub Pages** tại **https://khoitran206.github.io/**.
 
 - 351 Minh Phụng, P. Minh Phụng, TP.HCM · 26B/4 Lạc Long Quân, P. Bình Thới, TP.HCM
 - Hotline/Zalo: 0909.637.168 · Email: coffeenhantogo978@gmail.com

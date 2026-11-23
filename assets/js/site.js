@@ -13,6 +13,11 @@
   if (STATIC) document.documentElement.classList.add("static");
   const reduced = matchMedia("(prefers-reduced-motion: reduce)").matches;
   const page = document.body.dataset.page || "";
+  // Public site root. Home links use "./" online (→ https://khoitran206.github.io/), "index.html" when opened from disk.
+  const SITE_URL = "https://khoitran206.github.io/";
+  const ONLINE = /^https?:$/.test(location.protocol);
+  const HOME = ONLINE ? "./" : "index.html";
+  N.SITE_URL = SITE_URL; N.HOME = HOME;
 
   /* ---------- utils ---------- */
   const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
@@ -48,7 +53,7 @@
 
   /* ---------- layout: header / footer / overlays ---------- */
   const NAV = [
-    { href: "index.html", label: "Trang chủ", key: "home" },
+    { href: HOME, label: "Trang chủ", key: "home" },
     { href: "thuc-don.html", label: "Thực đơn", key: "menu" },
     { href: "san-pham.html", label: "Sản phẩm", key: "shop", sub: [
       { href: "san-pham.html?loai=rang-xay", label: "Cà phê rang xay" },
@@ -78,7 +83,7 @@
       <button class="icon-btn menu-toggle" aria-label="Mở menu" aria-expanded="false" aria-controls="mobileNav" data-open="mobileNav">
         <svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h10" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
       </button>
-      <a class="brand" href="index.html" aria-label="${S.name} – Trang chủ">
+      <a class="brand" href="${HOME}" aria-label="${S.name} – Trang chủ">
         <img src="assets/img/nhan-wordmark.png" alt="Nhẫn Coffee" width="70" height="47">
         <span class="brand-sep" aria-hidden="true"></span>
         <span class="brand-tag"><b>To Go</b><small>Cà phê phin</small></span>
@@ -417,6 +422,31 @@
     groups.forEach((els) => els.forEach((el, i) => { el.style.setProperty("--i", i % 5); N.anim([el], el.dataset.reveal, { stagger: false }); }));
   };
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", autoAnim); else setTimeout(autoAnim, 0);
+
+  /* ---------- clean home URLs + canonical / social URLs (online only) ---------- */
+  const fixHomeLinks = (scope = document) => {
+    if (!ONLINE) return;
+    scope.querySelectorAll('a[href^="index.html"]').forEach((a) => a.setAttribute("href", "./" + a.getAttribute("href").slice("index.html".length)));
+  };
+  if (ONLINE) {
+    // 1) visiting /index.html directly → show the clean root URL
+    if (/\/index\.html$/.test(location.pathname)) history.replaceState(null, "", location.pathname.replace(/index\.html$/, "") + location.search + location.hash);
+    // 2) rewrite static + dynamically rendered links
+    setTimeout(() => fixHomeLinks(), 0);
+    new MutationObserver((ms) => ms.forEach((m) => m.addedNodes.forEach((n) => n.nodeType === 1 && fixHomeLinks(n)))).observe(document.body, { childList: true, subtree: true });
+    // 3) canonical + og:url + absolute og:image
+    const file = location.pathname.split("/").pop() || "";
+    const keep = ["id", "slug"].filter((k) => params.get(k)).map((k) => `${k}=${encodeURIComponent(params.get(k))}`).join("&");
+    const canonical = SITE_URL + (file === "index.html" ? "" : file) + (keep ? `?${keep}` : "");
+    const addMeta = (attr, key, val) => { let m = document.head.querySelector(`meta[${attr}="${key}"]`); if (!m) { m = document.createElement("meta"); m.setAttribute(attr, key); document.head.appendChild(m); } m.setAttribute("content", val); };
+    let link = document.head.querySelector('link[rel="canonical"]');
+    if (!link) { link = document.createElement("link"); link.rel = "canonical"; document.head.appendChild(link); }
+    link.href = canonical;
+    addMeta("property", "og:url", canonical);
+    addMeta("property", "og:site_name", S.name);
+    const ogImg = document.head.querySelector('meta[property="og:image"]');
+    if (ogImg && !/^https?:/.test(ogImg.content)) ogImg.content = SITE_URL + ogImg.content.replace(/^\.?\//, "");
+  }
 
   // scroll progress
   const bar = document.createElement("div");
