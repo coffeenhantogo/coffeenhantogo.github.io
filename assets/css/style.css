@@ -23,7 +23,7 @@
   --shadow-sm: 0 4px 14px rgba(59, 32, 18, .08);
   --ease: cubic-bezier(.2, .8, .2, 1);
   --font: "Nunito", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
-  --font-display: "Poppins", var(--font);
+  --font-display: "Be Vietnam Pro", var(--font);
 }
 
 *, *::before, *::after { box-sizing: border-box; }
