@@ -451,26 +451,14 @@ a.tb-item:hover { color: var(--lime); }
 .feature-price { margin-top: 14px; font-size: 26px; font-weight: 900; color: var(--ink); }
 .feature-actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 16px; }
 
-/* home: dark espresso band for ground coffee */
-.ground-band { position: relative; overflow: hidden; background: radial-gradient(90% 120% at 10% 0%, #4a2c19 0%, var(--espresso) 55%, #1c110a 100%); color: #fff; }
-.ground-band::before, .ground-band::after { content: ""; position: absolute; border-radius: 50%; pointer-events: none; }
-.ground-band::before { width: 520px; height: 520px; right: -160px; top: -200px; background: radial-gradient(circle, rgba(168,214,54,.22), rgba(168,214,54,0) 65%); }
-.ground-band::after { width: 380px; height: 380px; left: -140px; bottom: -180px; background: radial-gradient(circle, rgba(168,214,54,.14), rgba(168,214,54,0) 65%); }
-.ground-band .container { position: relative; z-index: 1; }
-.ground-band .kicker { color: var(--lime); }
-.ground-band .section-title { color: #fff; }
-.ground-band .feature-card { background: rgba(255,255,255,.06); border: 1px solid rgba(255,255,255,.12); backdrop-filter: blur(6px); }
-.ground-band .feature-card:hover { background: rgba(255,255,255,.1); border-color: rgba(168,214,54,.5); box-shadow: 0 24px 50px rgba(0,0,0,.35); }
-.ground-band .feature-body h3, .ground-band .feature-body h3 a { color: #fff; }
-.ground-band .p-cat { color: var(--lime); }
-.ground-band .feature-short { color: rgba(255,255,255,.72); }
-.ground-band .feature-price { color: var(--lime); }
-.ground-band .feature-price small { color: rgba(255,255,255,.6); }
-.ground-band .btn-outline { border-color: rgba(255,255,255,.35); color: #fff; }
-.ground-band .btn-outline:hover { background: #fff; color: var(--ink); border-color: #fff; }
-.feature-price small { display: block; font-size: 11.5px; font-weight: 800; letter-spacing: .12em; text-transform: uppercase; margin-bottom: 2px; }
+/* home: ground coffee on a light, airy background */
+.ground-light { background: linear-gradient(180deg, #fff 0%, var(--crema) 100%); }
+.ground-light .feature-card { background: #fff; border: 1px solid var(--latte); box-shadow: 0 10px 30px rgba(59,32,18,.07); position: relative; overflow: hidden; }
+.ground-light .feature-card::before { content: ""; position: absolute; left: 0; top: 22px; bottom: 22px; width: 4px; border-radius: 0 4px 4px 0; background: var(--lime); }
+.ground-light .feature-card:hover { border-color: var(--lime-dark); box-shadow: 0 22px 44px rgba(59,32,18,.14); }.feature-price small { color: rgba(255,255,255,.6); }
+.feature-price small { color: var(--muted); display: block; font-size: 11.5px; font-weight: 800; letter-spacing: .12em; text-transform: uppercase; margin-bottom: 2px; }
 .feature-points { margin-top: 12px; display: grid; gap: 6px; }
-.feature-points li { position: relative; padding-left: 24px; font-size: 14px; color: rgba(255,255,255,.82); }
+.feature-points li { position: relative; padding-left: 24px; font-size: 14px; color: #6d5446; }
 .feature-points li::before { content: ""; position: absolute; left: 0; top: 3px; width: 15px; height: 15px; border-radius: 50%; background: var(--lime) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='m6 12.5 4 4L18 8' fill='none' stroke='%23111' stroke-width='3.2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center / 11px no-repeat; }
 .feature-card { grid-template-columns: 44% 1fr; }
 .feature-media { aspect-ratio: 1; }
