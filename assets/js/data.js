@@ -126,7 +126,7 @@ NHAN.PRODUCTS = [
   {
     id: "ca-phe-xay-thuong", type: "ground", group: "ca-phe-xay", cat: "Cà phê xay",
     name: "Cà phê xay Thường – 1kg", img: "ground-phin-scoop", gallery: ["ground-phin-scoop", "ground-bowl-2", "drink-phin-nong"],
-    price: 180000, featured: true,
+    price: 280000, featured: true,
     short: "Cà phê xay gói 1kg – mang hương vị Nhẫn về nhà.",
     desc: "Cà phê xay của Nhẫn, đóng gói 1kg, để bạn tự pha tại nhà hoặc dùng cho quán.",
     notes: ["Gói 1kg"],
@@ -134,7 +134,7 @@ NHAN.PRODUCTS = [
   {
     id: "ca-phe-xay-dac-biet", type: "ground", group: "ca-phe-xay", cat: "Cà phê xay",
     name: "Cà phê xay Đặc biệt – 1kg", img: "beans-sack-bags", gallery: ["beans-sack-bags", "ground-bowl", "hero-beans"],
-    price: 280000, badge: "Đặc biệt", featured: true,
+    price: 340000, badge: "Đặc biệt", featured: true,
     short: "Dòng cà phê xay Đặc biệt của Nhẫn, gói 1kg.",
     desc: "Cà phê xay dòng Đặc biệt của Nhẫn, đóng gói 1kg. Liên hệ để được tư vấn khi mua số lượng lớn.",
     notes: ["Gói 1kg", "Dòng đặc biệt"],
