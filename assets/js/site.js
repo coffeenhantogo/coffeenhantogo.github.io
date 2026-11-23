@@ -13,8 +13,8 @@
   if (STATIC) document.documentElement.classList.add("static");
   const reduced = matchMedia("(prefers-reduced-motion: reduce)").matches;
   const page = document.body.dataset.page || "";
-  // Public site root. Home links use "./" online (→ https://khoitran206.github.io/), "index.html" when opened from disk.
-  const SITE_URL = "https://khoitran206.github.io/";
+  // Public site root. Home links use "./" online (→ https://coffeenhantogo.github.io/), "index.html" when opened from disk.
+  const SITE_URL = "https://coffeenhantogo.github.io/";
   const ONLINE = /^https?:$/.test(location.protocol);
   const HOME = ONLINE ? "./" : "index.html";
   N.SITE_URL = SITE_URL; N.HOME = HOME;

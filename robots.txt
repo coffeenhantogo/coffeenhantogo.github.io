@@ -5,4 +5,4 @@ Disallow: /thanh-toan.html
 Disallow: /dat-hang-thanh-cong.html
 Disallow: /don-hang.html
 
-Sitemap: https://khoitran206.github.io/sitemap.xml
+Sitemap: https://coffeenhantogo.github.io/sitemap.xml
