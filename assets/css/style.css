@@ -1249,68 +1249,6 @@ img.img-ready { opacity: 1; transition: opacity .7s ease; }
   .brand-badge, .header.is-stuck .brand-badge { width: 44px; height: 44px; }
 }
 
-/* =========================================================
-   HEADER v4 — premium black bar
-   ========================================================= */
-.topbar { background: #0b0b0b; border-bottom: 1px solid rgba(255,255,255,.06); color: rgba(255,255,255,.6); }
-.header { padding: 0; background: #0f0f0f; pointer-events: auto; border-bottom: 1px solid rgba(255,255,255,.07); transition: background .35s, box-shadow .35s; }
-.header::before { display: none; }
-.header.is-stuck { padding: 0; background: rgba(12,12,12,.96); -webkit-backdrop-filter: saturate(160%) blur(14px); backdrop-filter: saturate(160%) blur(14px); box-shadow: 0 10px 30px rgba(0,0,0,.35); }
-.header-inner, .header.is-stuck .header-inner {
-  height: 78px; padding: 0 20px; border-radius: 0; background: transparent; border: 0; box-shadow: none;
-  -webkit-backdrop-filter: none; backdrop-filter: none; max-width: calc(var(--container) + 40px);
-}
-.header.is-stuck .header-inner { height: 66px; }
-
-/* brand */
-.brand { gap: 12px; }
-.brand-badge { width: 50px; height: 50px; box-shadow: 0 0 0 3px rgba(168,214,54,.18), 0 0 24px rgba(168,214,54,.25); }
-.header.is-stuck .brand-badge { width: 44px; height: 44px; }
-.brand-name { display: flex; flex-direction: column; line-height: 1.05; }
-.brand-name b { font-family: var(--font-display); font-weight: 800; font-size: 17px; color: #fff; letter-spacing: .01em; }
-.brand-name small { margin-top: 4px; font-size: 10.5px; font-weight: 800; letter-spacing: .32em; text-transform: uppercase; color: var(--lime); }
-
-/* nav: white text, sliding lime underline */
-.nav > ul { padding: 0; gap: 4px; background: transparent; }
-.nav > ul > li > a { padding: 10px 14px; border-radius: 10px; font-size: 13.5px; letter-spacing: .08em; color: rgba(255,255,255,.72); transition: color .25s; }
-.nav > ul > li > a:hover { color: #fff; }
-.nav > ul > li > a.is-current { color: var(--lime); }
-.nav-ink { top: auto; bottom: 2px; height: 3px; background: var(--lime); box-shadow: 0 0 12px rgba(168,214,54,.7); border-radius: 3px; }
-.nav-ink::after { display: none; }
-.chev { opacity: .6; }
-.sub { background: #161616; border: 1px solid rgba(255,255,255,.08); box-shadow: 0 20px 40px rgba(0,0,0,.45); }
-.sub a { color: rgba(255,255,255,.78); }
-.sub a:hover { background: rgba(168,214,54,.12); color: var(--lime); }
-
-/* actions */
-.header-actions { color: #fff; gap: 12px; }
-.ha-group { background: transparent; padding: 0; gap: 4px; }
-.ha-group .icon-btn { width: 42px; height: 42px; color: rgba(255,255,255,.85); }
-.header-actions .icon-btn.round:hover { color: var(--ink); }
-.header-actions .icon-btn.round::after { background: var(--lime); color: var(--ink); }
-.cart-count { box-shadow: 0 0 0 2px #0f0f0f; }
-.hb-avatar { background: var(--lime); color: var(--ink); }
-.btn-order {
-  height: 46px; padding: 0 6px 0 20px; background: var(--lime); color: var(--ink);
-  box-shadow: 0 6px 22px rgba(168,214,54,.35), inset 0 1px 0 rgba(255,255,255,.35);
-}
-.btn-order:hover { background: #b9e44b; color: var(--ink); box-shadow: 0 10px 28px rgba(168,214,54,.5), inset 0 1px 0 rgba(255,255,255,.35); }
-.bo-arrow { background: var(--ink); color: var(--lime); }
-.btn-order:hover .bo-arrow { background: var(--ink); }
-.menu-toggle { color: #fff; }
-
-@media (max-width: 1240px) {
-  .brand-name { display: none; }
-  .nav > ul > li > a { padding: 10px 10px; font-size: 12.5px; }
-}
-@media (max-width: 1024px) {
-  .header-inner, .header.is-stuck .header-inner { height: 64px; margin: 0; padding: 0 14px; width: 100%; }
-}
-@media (max-width: 760px) {
-  .header-inner, .header.is-stuck .header-inner { height: 60px; margin: 0; width: 100%; padding: 0 10px; }
-  .brand-badge, .header.is-stuck .brand-badge { width: 42px; height: 42px; }
-}
-
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; }
   .slide .hero-title .w, .js-anim .section-head .section-title .w { opacity: 1 !important; transform: none !important; }
