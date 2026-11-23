@@ -102,11 +102,13 @@
         </ul>
       </nav>
       <div class="header-actions">
-        <button class="icon-btn round hb-search" data-tip="Tìm kiếm" aria-label="Tìm kiếm sản phẩm" data-open="searchModal">${IC.search}</button>
-        <a class="icon-btn round hide-sm hb-orders" data-tip="Đơn hàng" href="don-hang.html" aria-label="Đơn hàng của tôi">${IC.receipt}</a>
-        <a class="icon-btn round hb-user" data-tip="Đăng nhập" href="dang-nhap.html" aria-label="Đăng nhập / Tài khoản" data-account-link>${IC.user}</a>
-        <button class="icon-btn round cart-btn" data-tip="Giỏ hàng" aria-label="Giỏ hàng" data-open="cartDrawer">${IC.bag}<span class="cart-count" data-cart-count hidden>0</span></button>
-        <a class="btn-order" href="thuc-don.html">${IC.phone.replace("<svg", '<svg width="16" height="16"')} Đặt hàng</a>
+        <div class="ha-group">
+          <button class="icon-btn round hb-search" data-tip="Tìm kiếm" aria-label="Tìm kiếm sản phẩm" data-open="searchModal">${IC.search}</button>
+          <a class="icon-btn round hide-sm hb-orders" data-tip="Đơn hàng" href="don-hang.html" aria-label="Đơn hàng của tôi">${IC.receipt}</a>
+          <a class="icon-btn round hb-user" data-tip="Đăng nhập" href="dang-nhap.html" aria-label="Đăng nhập / Tài khoản" data-account-link>${IC.user}</a>
+          <button class="icon-btn round cart-btn" data-tip="Giỏ hàng" aria-label="Giỏ hàng" data-open="cartDrawer">${IC.bag}<span class="cart-count" data-cart-count hidden>0</span></button>
+        </div>
+        <a class="btn-order" href="thuc-don.html"><span>Đặt hàng</span><i class="bo-arrow" aria-hidden="true"><svg viewBox="0 0 24 24" width="16" height="16"><path d="M5 12h14M13 6l6 6-6 6" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg></i></a>
       </div>
     </div>
   </header>`;
@@ -512,6 +514,33 @@
   const onScroll = () => header.classList.toggle("is-stuck", scrollY > 40);
   addEventListener("scroll", onScroll, { passive: true });
   onScroll();
+
+  /* ---------- nav: sliding pill indicator ---------- */
+  (() => {
+    const ul = document.querySelector(".nav > ul");
+    if (!ul) return;
+    const ink = document.createElement("span");
+    ink.className = "nav-ink"; ink.setAttribute("aria-hidden", "true");
+    ul.prepend(ink);
+    const links = [...ul.querySelectorAll(":scope > li > a")];
+    const current = links.find((a) => a.classList.contains("is-current"));
+    const moveTo = (a, instant) => {
+      if (!a) { ink.style.opacity = "0"; return; }
+      const r = a.getBoundingClientRect(), p = ul.getBoundingClientRect();
+      if (instant) ink.style.transition = "none";
+      ink.style.width = `${r.width}px`;
+      ink.style.transform = `translateX(${r.left - p.left}px)`;
+      ink.style.opacity = "1";
+      if (instant) { void ink.offsetWidth; ink.style.transition = ""; }
+    };
+    links.forEach((a) => a.addEventListener("mouseenter", () => moveTo(a)));
+    links.forEach((a) => a.addEventListener("focus", () => moveTo(a)));
+    ul.addEventListener("mouseleave", () => moveTo(current));
+    const place = () => moveTo(current, true);
+    (document.fonts && document.fonts.ready ? document.fonts.ready : Promise.resolve()).then(place);
+    addEventListener("resize", place);
+    setTimeout(place, 50);
+  })();
 
   /* ---------- accounts (Firebase, loaded only when configured) ---------- */
   N.fbReady = new Promise((res) => (N._fbResolve = res));
