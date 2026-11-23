@@ -92,6 +92,7 @@
   form.addEventListener("submit", (e) => {
     e.preventDefault();
     const qty = Math.max(1, Math.min(99, parseInt(form.qty.value, 10) || 1));
+    N.fly && N.fly(mainImg);
     N.cart.add(p.id, qty, N.readOpts(form), form.note.value.trim());
     if (e.submitter && e.submitter.value === "buy") location.href = "thanh-toan.html";
     else N.open("cartDrawer");

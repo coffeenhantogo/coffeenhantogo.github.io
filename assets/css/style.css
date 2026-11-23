@@ -786,8 +786,123 @@ a.tb-item:hover { color: var(--lime); }
   .js-anim [data-anim="left"], .js-anim [data-anim="right"] { transform: translateY(40px); }
 }
 
+/* =========================================================
+   MICRO-INTERACTIONS (motion polish)
+   ========================================================= */
+/* page + header enter */
+@keyframes pageIn { from { opacity: 0; transform: translateY(10px); } }
+@keyframes hdrIn { from { opacity: 0; transform: translateY(-14px); } }
+.js-anim main { animation: pageIn .7s var(--ease) both; }
+.js-anim .header-inner { animation: hdrIn .7s var(--ease) both; }
+
+/* images fade in once loaded (class set by site.js only for not-yet-loaded images) */
+img.img-wait { opacity: 0; }
+img.img-ready { opacity: 1; transition: opacity .7s ease; }
+
+/* split-word reveals: hero titles + section titles */
+.w { display: inline-block; white-space: pre; }
+.slide .hero-title .w { opacity: 0; transform: translateY(55%) rotate(4deg); transform-origin: 0 100%; transition: opacity .7s ease, transform .9s var(--ease); transition-delay: calc(.12s + var(--w, 0) * 65ms); }
+.slide.is-active .hero-title .w { opacity: 1; transform: none; }
+.js-anim .section-head .section-title .w { opacity: 0; transform: translateY(45%); transition: opacity .6s ease, transform .8s var(--ease); transition-delay: calc(.1s + var(--w, 0) * 70ms); }
+.js-anim .section-head.in .section-title .w { opacity: 1; transform: none; }
+
+/* hero: mouse parallax (translate composes with the Ken Burns transform) + timed dots */
+.slide-bg { translate: var(--px, 0) var(--py, 0); transition: transform 7s ease-out, translate .9s var(--ease); }
+.hero-dots button { position: relative; overflow: hidden; }
+.hero-dots button[aria-selected="true"] { background: rgba(255,255,255,.35); }
+.hero-dots button[aria-selected="true"]::after { content: ""; position: absolute; inset: 0; background: var(--lime); transform-origin: 0 50%; animation: dotFill 6.5s linear forwards; }
+@keyframes dotFill { from { transform: scaleX(0); } to { transform: scaleX(1); } }
+.static .hero-dots button[aria-selected="true"]::after { animation: none; }
+
+/* buttons: light sweep + press */
+.btn, .btn-order, .fchip, .tab { position: relative; overflow: hidden; isolation: isolate; }
+.btn::after, .btn-order::after {
+  content: ""; position: absolute; top: 0; left: -130%; width: 55%; height: 100%; z-index: 1; pointer-events: none;
+  background: linear-gradient(105deg, transparent, rgba(255,255,255,.5), transparent); transform: skewX(-20deg);
+}
+.btn:active, .btn-order:active, .fchip:active, .p-add:active { transform: scale(.96); }
+/* click ripple */
+.ripple { position: absolute; border-radius: 50%; pointer-events: none; background: currentColor; opacity: .22; transform: scale(0); animation: ripple .65s ease-out forwards; z-index: 0; }
+@keyframes ripple { to { transform: scale(2.8); opacity: 0; } }
+.p-add { overflow: hidden; }
+
+/* 3D tilt + glare (vars set by site.js on fine pointers) */
+.p-media-wrap, .post-media, .pd-main-img {
+  transform: perspective(900px) rotateX(var(--rx, 0deg)) rotateY(var(--ry, 0deg)) translateY(var(--ty, 0px));
+  transition: transform .55s var(--ease), box-shadow .45s var(--ease);
+}
+.pd-main-img { position: relative; }
+.p-media-wrap::before, .post-media::before, .pd-main-img::before {
+  content: ""; position: absolute; inset: 0; z-index: 3; pointer-events: none; opacity: 0; transition: opacity .35s;
+  background: radial-gradient(circle at var(--mx, 50%) var(--my, 50%), rgba(255,255,255,.38), rgba(255,255,255,0) 48%);
+}
+.tilting { transition: transform .12s linear, box-shadow .45s var(--ease); }
+.tilting::before { opacity: 1; }
+
+/* lime underline that draws in (post titles, footer links) */
+.post h3 a, .links a, .contact a, .p-name a {
+  background: linear-gradient(var(--lime), var(--lime)) 0 100% / 0 2px no-repeat; transition: background-size .45s var(--ease), color .2s;
+}
+
+/* floating buttons: label tooltip */
+.float-btn { position: relative; }
+.float-btn::before {
+  content: attr(data-tip); position: absolute; right: calc(100% + 12px); top: 50%; transform: translate(8px, -50%); white-space: nowrap;
+  background: var(--ink); color: #fff; font-size: 13px; font-weight: 800; padding: 7px 12px; border-radius: 999px; opacity: 0; pointer-events: none; transition: .3s var(--ease);
+}
+
+/* fly-to-cart clone */
+.fly-img { position: fixed; z-index: 130; pointer-events: none; object-fit: cover; border-radius: 16px; box-shadow: 0 14px 34px rgba(0,0,0,.3);
+  transition: transform .85s cubic-bezier(.55,-0.25,.7,1), opacity .85s ease, border-radius .85s ease; }
+
+/* dropdown items cascade */
+.sub li { opacity: 0; transform: translateX(-10px); transition: opacity .3s ease, transform .35s var(--ease); }
+.has-sub:hover .sub li, .has-sub:focus-within .sub li { opacity: 1; transform: none; }
+.has-sub:hover .sub li:nth-child(2), .has-sub:focus-within .sub li:nth-child(2) { transition-delay: .05s; }
+.has-sub:hover .sub li:nth-child(3), .has-sub:focus-within .sub li:nth-child(3) { transition-delay: .1s; }
+.sub a { transition: background .2s, color .2s, padding-left .3s var(--ease); }
+
+/* misc transitions used by hover states */
+.usp-ic, .value .usp-ic, .sc-ic { transition: transform .5s var(--ease), background .3s, color .3s; }
+.tile-body { transition: transform .6s var(--ease); }
+.tile-kicker { transition: letter-spacing .5s var(--ease); }
+.tile::before { content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: 5px; z-index: 2; background: var(--lime); transform: scaleX(0); transform-origin: 0 50%; transition: transform .7s var(--ease); }
+.post-media::after { content: ""; position: absolute; inset: 0; z-index: 1; background: linear-gradient(0deg, rgba(24,14,8,.45), rgba(24,14,8,0) 55%); opacity: 0; transition: opacity .4s; }
+.post-tag { z-index: 2; transition: transform .4s var(--ease), background .3s, color .3s; }
+.icon-btn svg { transition: transform .35s var(--ease); }
+.store-card .store-no { transition: transform .5s var(--ease); display: inline-block; }
+.chip span { transition: background .2s, border-color .2s, color .2s, transform .25s var(--ease); }
+
+@media (hover: hover) and (pointer: fine) {
+  .btn:hover::after, .btn-order:hover::after { left: 140%; transition: left .75s var(--ease); }
+  .p-card:hover .p-media-wrap { --ty: -6px; box-shadow: 0 20px 40px rgba(59,32,18,.2); }
+  .post:hover .post-media { --ty: -4px; box-shadow: 0 18px 36px rgba(59,32,18,.18); }
+  .post h3 a:hover, .post:hover h3 a, .links a:hover, .contact a:hover, .p-name a:hover { background-size: 100% 2px; }
+  .post:hover .post-media::after { opacity: 1; }
+  .post:hover .post-tag { transform: translateY(-2px); background: var(--lime); }
+  .tile:hover .tile-body { transform: translateY(-10px); }
+  .tile:hover .tile-kicker { letter-spacing: .3em; }
+  .tile:hover::before { transform: scaleX(1); }
+  .tile:hover::after { background: linear-gradient(to top, rgba(40,52,12,.9) 0%, rgba(20,12,6,.35) 50%, rgba(20,12,6,.05) 80%); }
+  .usp-item:hover .usp-ic, .value:hover .usp-ic { background: var(--lime); color: var(--ink); transform: rotate(-12deg) scale(1.1); }
+  .sc-item:hover .sc-ic, .info-item:hover .sc-ic { transform: rotate(-12deg) scale(1.08); }
+  .store-card:hover .store-no { transform: scale(1.15) rotate(-6deg); }
+  .icon-btn.round:hover svg { transform: scale(1.15); }
+  .cart-btn:hover svg { transform: rotate(-10deg) scale(1.15); }
+  .sub a:hover { padding-left: 20px; }
+  .chip:hover span { transform: translateY(-2px); }
+  .float-btn:hover::before { opacity: 1; transform: translate(0, -50%); }
+  .info-item { transition: transform .35s var(--ease), box-shadow .35s; }
+  .info-item:hover { transform: translateX(6px); box-shadow: var(--shadow-sm); }
+  .mnav a { transition: padding-left .3s var(--ease), color .2s; }
+  .mnav a:hover { padding-left: 8px; color: var(--lime-deep); }
+}
+
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; }
+  .slide .hero-title .w, .js-anim .section-head .section-title .w { opacity: 1 !important; transform: none !important; }
+  .p-media-wrap, .post-media, .pd-main-img { transform: none !important; }
+  img.img-wait { opacity: 1 !important; }
   .js-anim [data-anim] { opacity: 1 !important; transform: none !important; filter: none !important; clip-path: none !important; }
   .scroll-progress { display: none; }
 }

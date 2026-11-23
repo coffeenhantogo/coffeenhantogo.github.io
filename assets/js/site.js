@@ -307,10 +307,10 @@
     return o;
   };
   const optBox = document.querySelector("[data-opt-box]");
-  N.pick = (id) => {
+  N.pick = (id, srcImg) => {
     const p = byId[id];
     if (!p) return;
-    if (!p.options || !Object.keys(p.options).length) { N.cart.add(id); return; }
+    if (!p.options || !Object.keys(p.options).length) { N.fly && N.fly(srcImg); N.cart.add(id); return; }
     optBox.innerHTML = `
       <div class="opt-head">
         <img src="${img(p.img)}" alt="">
@@ -330,6 +330,7 @@
     form.addEventListener("submit", (e) => {
       e.preventDefault();
       const qty = Math.max(1, Math.min(99, parseInt(form.qty.value, 10) || 1));
+      N.fly && N.fly(optBox.querySelector(".opt-head img"));
       N.cart.add(id, qty, N.readOpts(form), form.note.value.trim());
       N.close();
     });
@@ -343,7 +344,11 @@
   });
   document.addEventListener("click", (e) => {
     const a = e.target.closest("[data-add]");
-    if (a) { e.preventDefault(); N.pick(a.dataset.add); }
+    if (a) {
+      e.preventDefault();
+      const src = a.closest(".p-card, li")?.querySelector(".p-media img, .c-thumb img");
+      N.pick(a.dataset.add, src);
+    }
   });
 
   /* ---------- product card ---------- */
@@ -459,6 +464,110 @@
   const onScroll = () => header.classList.toggle("is-stuck", scrollY > 40);
   addEventListener("scroll", onScroll, { passive: true });
   onScroll();
+
+  /* ---------- motion polish ---------- */
+  const FINE = matchMedia("(hover: hover) and (pointer: fine)").matches;
+
+  // split text into word spans (keeps inline elements like <em>) → CSS staggers .w via --w
+  N.splitWords = (el) => {
+    if (!el || el.dataset.split) return;
+    el.dataset.split = "1";
+    let i = 0;
+    const walk = (node) => {
+      [...node.childNodes].forEach((ch) => {
+        if (ch.nodeType === 3) {
+          const frag = document.createDocumentFragment();
+          ch.textContent.split(/(\s+)/).forEach((part) => {
+            if (!part) return;
+            if (/^\s+$/.test(part)) { frag.appendChild(document.createTextNode(part)); return; }
+            const s = document.createElement("span");
+            s.className = "w"; s.textContent = part; s.style.setProperty("--w", i++);
+            frag.appendChild(s);
+          });
+          ch.replaceWith(frag);
+        } else if (ch.nodeType === 1) walk(ch);
+      });
+    };
+    walk(el);
+  };
+  if (ANIM) setTimeout(() => document.querySelectorAll(".section-head .section-title").forEach(N.splitWords), 0);
+
+  // fade images in once loaded (only those still loading, so cached images never flash)
+  const prepImg = (im) => {
+    if (im.complete || im.dataset.fade) return;
+    im.dataset.fade = "1"; im.classList.add("img-wait");
+    const done = () => { im.classList.remove("img-wait"); im.classList.add("img-ready"); };
+    im.addEventListener("load", done, { once: true }); im.addEventListener("error", done, { once: true });
+  };
+  if (ANIM) {
+    document.querySelectorAll("img").forEach(prepImg);
+    new MutationObserver((ms) => ms.forEach((m) => m.addedNodes.forEach((n) => {
+      if (n.nodeType !== 1) return;
+      if (n.tagName === "IMG") prepImg(n); else n.querySelectorAll && n.querySelectorAll("img").forEach(prepImg);
+    }))).observe(document.body, { childList: true, subtree: true });
+  }
+
+  // click ripple
+  document.addEventListener("pointerdown", (e) => {
+    if (reduced) return;
+    const b = e.target.closest(".btn, .btn-order, .fchip, .p-add, .mini-add, .tab");
+    if (!b) return;
+    const r = b.getBoundingClientRect(), d = Math.max(r.width, r.height);
+    const s = document.createElement("span");
+    s.className = "ripple";
+    Object.assign(s.style, { width: `${d}px`, height: `${d}px`, left: `${e.clientX - r.left - d / 2}px`, top: `${e.clientY - r.top - d / 2}px` });
+    b.appendChild(s);
+    setTimeout(() => s.remove(), 700);
+  });
+
+  // 3D tilt + glare on product / post / gallery images (mouse only)
+  if (FINE && !reduced && !STATIC) {
+    let cur = null;
+    const reset = (el) => { el.classList.remove("tilting"); ["--rx", "--ry"].forEach((v) => el.style.removeProperty(v)); };
+    document.addEventListener("pointermove", (e) => {
+      const el = e.target.closest(".p-media-wrap, .post-media, .pd-main-img");
+      if (cur && cur !== el) { reset(cur); cur = null; }
+      if (!el) return;
+      cur = el;
+      const r = el.getBoundingClientRect();
+      const x = (e.clientX - r.left) / r.width, y = (e.clientY - r.top) / r.height;
+      el.classList.add("tilting");
+      el.style.setProperty("--rx", `${((0.5 - y) * 9).toFixed(2)}deg`);
+      el.style.setProperty("--ry", `${((x - 0.5) * 11).toFixed(2)}deg`);
+      el.style.setProperty("--mx", `${(x * 100).toFixed(1)}%`);
+      el.style.setProperty("--my", `${(y * 100).toFixed(1)}%`);
+    }, { passive: true });
+    document.addEventListener("pointerleave", () => { if (cur) { reset(cur); cur = null; } });
+  }
+
+  // fly a product image into the cart icon
+  N.fly = (imgEl) => {
+    const cartBtn = document.querySelector(".cart-btn");
+    if (!imgEl || !cartBtn || reduced) return;
+    const a = imgEl.getBoundingClientRect(), b = cartBtn.getBoundingClientRect();
+    if (!a.width || a.bottom < 0 || a.top > innerHeight) return;
+    const c = document.createElement("img");
+    c.src = imgEl.currentSrc || imgEl.src; c.alt = ""; c.className = "fly-img";
+    Object.assign(c.style, { left: `${a.left}px`, top: `${a.top}px`, width: `${a.width}px`, height: `${a.height}px` });
+    document.body.appendChild(c);
+    requestAnimationFrame(() => requestAnimationFrame(() => {
+      const dx = b.left + b.width / 2 - (a.left + a.width / 2), dy = b.top + b.height / 2 - (a.top + a.height / 2);
+      c.style.transform = `translate(${dx}px, ${dy}px) scale(${Math.max(0.08, 34 / a.width)})`;
+      c.style.opacity = "0.35"; c.style.borderRadius = "50%";
+    }));
+    setTimeout(() => c.remove(), 900);
+  };
+
+  // parallax for inner-page banners
+  const pageBg = document.querySelector(".page-hero-bg");
+  if (pageBg && !reduced && !STATIC) {
+    const par = () => { if (scrollY < 700) pageBg.style.translate = `0 ${(scrollY * 0.3).toFixed(1)}px`; };
+    addEventListener("scroll", par, { passive: true });
+  }
+
+  // tooltip labels for floating buttons
+  document.querySelector(".float-btn.zalo")?.setAttribute("data-tip", "Chat Zalo");
+  document.querySelector(".float-btn.call")?.setAttribute("data-tip", `Gọi ${S.phoneDisplay}`);
 
   /* ---------- forms: FormSubmit + orders ---------- */
   N.canSend = () => /^https?:$/.test(location.protocol);
