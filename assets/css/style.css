@@ -1028,6 +1028,36 @@ img.img-ready { opacity: 1; transition: opacity .7s ease; }
   .mnav a:hover { padding-left: 8px; color: var(--lime-deep); }
 }
 
+/* ---------- Header hover v2 ---------- */
+.header-actions .icon-btn.round { isolation: isolate; overflow: visible; }
+.header-actions .icon-btn.round::before {           /* lime disc that blooms from the centre */
+  content: ""; position: absolute; inset: 0; z-index: -1; border-radius: 50%;
+  background: var(--lime); transform: scale(0); transition: transform .4s cubic-bezier(.34,1.56,.64,1);
+}
+.header-actions .icon-btn.round::after {            /* label under the icon */
+  content: attr(data-tip); position: absolute; top: calc(100% + 10px); left: 50%; transform: translate(-50%, -6px);
+  white-space: nowrap; background: var(--ink); color: #fff; font-size: 12px; font-weight: 800; letter-spacing: .02em;
+  padding: 5px 10px; border-radius: 8px; opacity: 0; pointer-events: none; transition: opacity .25s, transform .3s var(--ease);
+}
+.btn-order svg { transform-origin: 50% 50%; }
+.nav > ul > li > a { transition: color .2s, transform .3s var(--ease); }
+
+@media (hover: hover) and (pointer: fine) {
+  .header-actions .icon-btn.round:hover { color: var(--ink); background: transparent; transform: translateY(-2px); }
+  .header-actions .icon-btn.round:hover::before { transform: scale(1); box-shadow: 0 0 0 6px rgba(168,214,54,.25), 0 8px 18px rgba(95,122,34,.35); }
+  .header-actions .icon-btn.round:hover::after { opacity: 1; transform: translate(-50%, 0); }
+  .hb-search:hover svg { animation: hbSearch .6s var(--ease); }
+  .hb-orders:hover svg { animation: hbTilt .6s var(--ease); }
+  .cart-btn:hover svg { animation: hbShake .6s var(--ease); transform: none; }
+  .cart-btn:hover .cart-count { background: var(--ink); color: var(--lime); }
+  .btn-order:hover svg { animation: hbRing .7s ease-in-out; }
+  .nav > ul > li > a:hover { transform: translateY(-2px); }
+}
+@keyframes hbSearch { 0% { transform: none; } 40% { transform: rotate(-18deg) scale(1.2); } 100% { transform: rotate(0) scale(1.1); } }
+@keyframes hbTilt { 0%, 100% { transform: none; } 30% { transform: rotate(-12deg) scale(1.15); } 60% { transform: rotate(8deg) scale(1.1); } }
+@keyframes hbShake { 0%, 100% { transform: none; } 20% { transform: rotate(-14deg) scale(1.15); } 45% { transform: rotate(10deg) scale(1.15); } 70% { transform: rotate(-6deg) scale(1.1); } }
+@keyframes hbRing { 0%, 100% { transform: none; } 15%, 45%, 75% { transform: rotate(-16deg); } 30%, 60% { transform: rotate(16deg); } }
+
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; }
   .slide .hero-title .w, .js-anim .section-head .section-title .w { opacity: 1 !important; transform: none !important; }

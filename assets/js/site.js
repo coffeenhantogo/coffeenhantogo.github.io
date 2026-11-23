@@ -101,9 +101,9 @@
         </ul>
       </nav>
       <div class="header-actions">
-        <button class="icon-btn round" aria-label="Tìm kiếm sản phẩm" data-open="searchModal">${IC.search}</button>
-        <a class="icon-btn round hide-sm" href="don-hang.html" aria-label="Đơn hàng của tôi" title="Đơn hàng của tôi">${IC.receipt}</a>
-        <button class="icon-btn round cart-btn" aria-label="Giỏ hàng" data-open="cartDrawer">${IC.bag}<span class="cart-count" data-cart-count hidden>0</span></button>
+        <button class="icon-btn round hb-search" data-tip="Tìm kiếm" aria-label="Tìm kiếm sản phẩm" data-open="searchModal">${IC.search}</button>
+        <a class="icon-btn round hide-sm hb-orders" data-tip="Đơn hàng" href="don-hang.html" aria-label="Đơn hàng của tôi">${IC.receipt}</a>
+        <button class="icon-btn round cart-btn" data-tip="Giỏ hàng" aria-label="Giỏ hàng" data-open="cartDrawer">${IC.bag}<span class="cart-count" data-cart-count hidden>0</span></button>
         <a class="btn-order" href="thuc-don.html">${IC.phone.replace("<svg", '<svg width="16" height="16"')} Đặt hàng</a>
       </div>
     </div>
