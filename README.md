@@ -4,7 +4,7 @@ Website bán hàng của **Coffee Nhẫn To Go** (cà phê pha phin mang đi, c�
 Là trang tĩnh HTML/CSS/JS, không cần máy chủ, chạy trên **GitHub Pages** tại **https://coffeenhantogo.github.io/**.
 
 - 351 Minh Phụng, P. Minh Phụng, TP.HCM · 26B/4 Lạc Long Quân, P. Bình Thới, TP.HCM
-- Hotline/Zalo: 0909.637.168 · Email: coffeenhantogo978@gmail.com
+- Hotline/Zalo: 0909.637.168 · Email: coffeenhan178@gmail.com
 
 ## Các trang
 
@@ -24,7 +24,7 @@ Là trang tĩnh HTML/CSS/JS, không cần máy chủ, chạy trên **GitHub Page
 
 ## Đơn hàng được gửi về đâu?
 
-Khi khách bấm **Xác nhận đặt hàng**, đơn được gửi tới **coffeenhantogo978@gmail.com** qua dịch vụ miễn phí
+Khi khách bấm **Xác nhận đặt hàng**, đơn được gửi tới **coffeenhan178@gmail.com** qua dịch vụ miễn phí
 [FormSubmit](https://formsubmit.co). Khách cũng có nút **Gửi đơn qua Zalo**.
 
 > **Lần đầu tiên** có đơn (hoặc lời nhắn liên hệ), FormSubmit gửi một email **“Activate Form”** tới Gmail của quán.

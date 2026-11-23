@@ -13,10 +13,10 @@ NHAN.STORE = {
   phone: "0909637168",
   phoneDisplay: "0909.637.168",
   zalo: "https://zalo.me/0909637168",
-  email: "coffeenhantogo978@gmail.com",
+  email: "coffeenhan178@gmail.com",
   // Orders & contact messages are emailed through FormSubmit (https://formsubmit.co).
   // The FIRST submission sends an activation email to the address below — click "Activate" once.
-  formEndpoint: "https://formsubmit.co/ajax/coffeenhantogo978@gmail.com",
+  formEndpoint: "https://formsubmit.co/ajax/coffeenhan178@gmail.com",
   branches: [
     {
       id: "minh-phung",
