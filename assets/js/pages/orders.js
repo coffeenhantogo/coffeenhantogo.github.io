@@ -17,6 +17,32 @@
     window.open(S.zalo, "_blank", "noopener");
   };
 
+  /* VietQR bank-transfer panel (only when the customer chose bank transfer) */
+  const isTransfer = (o) => /chuyển khoản/i.test(o.payment || "");
+  const payPanel = (o) => {
+    if (!isTransfer(o)) return "";
+    const B = S.bank, note = o.code.replace(/-/g, " ");
+    const amount = o.totalAmount || null;
+    const src = N.qrUrl({ amount, note: `${note} ${o.customer.phone}` });
+    return `
+      <div class="pay-panel">
+        <div class="pay-qr">
+          <img src="${src}" alt="Mã VietQR chuyển khoản ${B.id} ${B.accountNo}" width="260" height="300" onerror="this.onerror=null;this.src='${B.staticQr}'">
+          <a class="btn btn-outline btn-sm" href="${src}" target="_blank" rel="noopener" download>Tải mã QR</a>
+        </div>
+        <div class="pay-info">
+          <span class="kicker">Thanh toán chuyển khoản</span>
+          <h3>Quét mã bằng app ngân hàng</h3>
+          <div class="pay-row"><span>Ngân hàng</span><b>${N.esc(B.name)}</b></div>
+          <div class="pay-row"><span>Chủ tài khoản</span><b>${N.esc(B.accountName)}</b></div>
+          <div class="pay-row"><span>Số tài khoản</span><b>${B.accountNo}</b><button type="button" class="pay-copy" data-copy-text="${B.accountNo}">Sao chép</button></div>
+          <div class="pay-row"><span>Số tiền</span><b class="pay-amount">${amount ? N.fmtVND(amount) : "Theo xác nhận của quán"}</b>${amount ? `<button type="button" class="pay-copy" data-copy-text="${amount}">Sao chép</button>` : ""}</div>
+          <div class="pay-row"><span>Nội dung</span><b>${N.esc(note)} ${N.esc(o.customer.phone)}</b><button type="button" class="pay-copy" data-copy-text="${N.esc(note)} ${N.esc(o.customer.phone)}">Sao chép</button></div>
+          <p class="pay-hint">Mã QR đã điền sẵn số tiền và nội dung. Sau khi chuyển, Nhẫn sẽ kiểm tra và xác nhận đơn qua điện thoại/Zalo.${o.delivery.method === "ship" ? " Phí giao hàng (nếu có) thanh toán khi nhận hàng." : ""}</p>
+        </div>
+      </div>`;
+  };
+
   /* success page */
   const sRoot = document.querySelector("[data-success]");
   if (sRoot) {
@@ -34,6 +60,7 @@
         ${sent
           ? `<p class="lead">Cảm ơn ${N.esc(o.customer.name)}! Đơn đã được gửi tới Nhẫn. Nhân viên sẽ gọi hoặc nhắn Zalo tới <b>${N.esc(o.customer.phone)}</b> để xác nhận đơn. Bạn có thể gửi thêm qua Zalo để được xử lý nhanh hơn.</p>`
           : `<div class="form-alert warn" style="margin-top:16px;text-align:left">${N.canSend() ? "Không gửi được đơn tự động (mạng chập chờn hoặc hệ thống email chưa kích hoạt)." : "Bạn đang xem thử trên máy nên đơn chưa được gửi email."} <b>Vui lòng bấm “Gửi đơn qua Zalo”</b> hoặc gọi ${S.phoneDisplay} để Nhẫn nhận đơn.</div>`}
+        ${payPanel(o)}
         <div class="order-detail">${detailRows(o)}</div>
         <div class="success-actions">
           <button class="btn ${sent ? "btn-outline" : "btn-lime"}" type="button" data-zalo>Gửi đơn qua Zalo</button>

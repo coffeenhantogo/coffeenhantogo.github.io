@@ -61,7 +61,7 @@
         <h2><span class="step">3</span> Thanh toán &amp; ghi chú</h2>
         <div class="choice-cards">
           <label class="choice"><input type="radio" name="payment" value="Tiền mặt khi nhận hàng" checked><span><i class="dot"></i><span><b>Tiền mặt khi nhận</b><small>Thanh toán khi nhận món / nhận hàng</small></span></span></label>
-          <label class="choice"><input type="radio" name="payment" value="Chuyển khoản"><span><i class="dot"></i><span><b>Chuyển khoản</b><small>Thông tin tài khoản gửi khi xác nhận đơn</small></span></span></label>
+          <label class="choice"><input type="radio" name="payment" value="Chuyển khoản QR (ACB)"><span><i class="dot"></i><span><b>Chuyển khoản QR · ACB</b><small>Quét mã VietQR có sẵn số tiền – hiện ngay sau khi đặt</small></span></span></label>
         </div>
         <label class="field"><span>Ghi chú cho đơn hàng</span><textarea class="textarea" name="note" maxlength="400" placeholder="VD: gọi trước khi giao, lấy thêm ống hút…"></textarea></label>
         <label class="check" data-f="agree"><input type="checkbox" name="agree" ${prof.name ? "checked" : ""}><span>Tôi đồng ý với <a href="chinh-sach.html" target="_blank">chính sách mua hàng</a> và đồng ý để Nhẫn liên hệ xác nhận đơn qua số điện thoại trên.</span></label>
@@ -144,6 +144,7 @@
       note: v("note"),
       items: N.cart.items().map((i) => ({ id: i.id, name: N.byId[i.id].name, qty: i.qty, opts: N.optSummary(i.opts), note: i.note, price: N.unitPrice(N.byId[i.id], i.opts) })),
       totalText: N.cart.total().text,
+      totalAmount: N.cart.total().unpriced ? null : N.cart.total().sum,
       status: "pending",
     };
   }

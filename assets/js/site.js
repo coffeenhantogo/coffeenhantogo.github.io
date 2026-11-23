@@ -109,35 +109,73 @@
     </div>
   </header>`;
 
+  const B = S.bank;
   const footerHTML = `
   <footer class="footer" id="contact">
-    <div class="container footer-grid">
-      <div>
-        <img class="footer-badge" src="assets/img/logo-badge.png" alt="Logo Coffee Nhẫn To Go" width="88" height="88" loading="lazy">
-        <h3>COFFEE NHẪN TO GO</h3>
-        <p>Cà phê Moka, bạc xỉu, trà sữa mang đi và cà phê xay gói 1kg. Pha chậm bằng sự kiên nhẫn – uống để hạnh phúc.</p>
-        <img class="footer-slogan" src="assets/img/drink-to-be-happy.png" alt="Drink to be happy" width="210" height="40" loading="lazy">
-      </div>
-      <div>
-        <h3>LIÊN KẾT</h3>
-        <ul class="links">
-          <li><a href="thuc-don.html">Thực Đơn Đồ Uống</a></li>
-          <li><a href="san-pham.html">Tất Cả Sản Phẩm</a></li>
-          <li><a href="san-pham.html?loai=ca-phe-xay">Cà Phê Xay 1kg</a></li>
-          <li><a href="don-hang.html">Đơn Hàng Của Tôi</a></li>
-          <li><a href="chinh-sach.html">Chính Sách Mua Hàng</a></li>
-        </ul>
-      </div>
-      <div>
-        <h3>LIÊN HỆ</h3>
-        <ul class="contact">
-          ${S.branches.map((b) => `<li>${IC.pin}<a href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(b.mapQuery)}" target="_blank" rel="noopener">${b.address}</a></li>`).join("")}
-          <li>${IC.phone}<span><a href="tel:${S.phone}">${S.phoneDisplay}</a> · <a href="${S.zalo}" target="_blank" rel="noopener">Zalo</a></span></li>
-          <li>${IC.mail}<a href="mailto:${S.email}">${S.email}</a></li>
-        </ul>
+    <div class="footer-cta">
+      <div class="container footer-cta-inner">
+        <div>
+          <h3>Thèm một ly cà phê?</h3>
+          <p>Đặt online hoặc nhắn Zalo – ghé lấy ngay, không cần chờ.</p>
+        </div>
+        <div class="footer-cta-actions">
+          <a class="btn btn-ink" href="thuc-don.html">Đặt món ngay</a>
+          <a class="btn btn-ghost-dark" href="${S.zalo}" target="_blank" rel="noopener">Zalo ${S.phoneDisplay}</a>
+        </div>
       </div>
     </div>
-    <div class="copyright">Copyright © ${new Date().getFullYear()} COFFEE NHẪN TO GO. Drink to be happy. · <a href="chinh-sach.html">Chính sách</a> · <a href="credits.html">Nguồn ảnh</a></div>
+    <div class="footer-main">
+      <div class="container footer-grid">
+        <div class="f-brand">
+          <a href="${HOME}" class="f-logo" aria-label="${S.name} – Trang chủ">
+            <img class="footer-badge" src="assets/img/logo-badge.png" alt="Logo Coffee Nhẫn To Go" width="76" height="76" loading="lazy">
+            <span><b>COFFEE NHẪN</b><small>TO GO · Cà phê mang đi</small></span>
+          </a>
+          <p>Cà phê Moka, bạc xỉu, trà sữa mang đi và cà phê xay gói 1kg. Pha chậm bằng sự kiên nhẫn – uống để hạnh phúc.</p>
+          <img class="footer-slogan" src="assets/img/drink-to-be-happy.png" alt="Drink to be happy" width="210" height="40" loading="lazy">
+          <div class="f-social">
+            <a href="${S.zalo}" target="_blank" rel="noopener" aria-label="Zalo">Zalo</a>
+            <a href="tel:${S.phone}" aria-label="Gọi điện">${IC.phone}</a>
+            <a href="mailto:${S.email}" aria-label="Email">${IC.mail}</a>
+          </div>
+        </div>
+        <div>
+          <h4>Khám phá</h4>
+          <ul class="links">
+            <li><a href="thuc-don.html">Thực đơn đồ uống</a></li>
+            <li><a href="san-pham.html">Tất cả sản phẩm</a></li>
+            <li><a href="san-pham.html?loai=ca-phe-xay">Cà phê xay 1kg</a></li>
+            <li><a href="bai-viet.html">Góc cà phê</a></li>
+            <li><a href="don-hang.html">Đơn hàng của tôi</a></li>
+            <li><a href="chinh-sach.html">Chính sách mua hàng</a></li>
+          </ul>
+        </div>
+        <div>
+          <h4>Cửa hàng</h4>
+          <ul class="contact">
+            ${S.branches.map((b) => `<li>${IC.pin}<a href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(b.mapQuery)}" target="_blank" rel="noopener"><b>${b.name}</b><br>${b.address}</a></li>`).join("")}
+            <li>${IC.phone}<span><a href="tel:${S.phone}">${S.phoneDisplay}</a> · <a href="${S.zalo}" target="_blank" rel="noopener">Zalo</a></span></li>
+            <li>${IC.mail}<a href="mailto:${S.email}">${S.email}</a></li>
+          </ul>
+        </div>
+        <div class="f-pay">
+          <h4>Thanh toán</h4>
+          <div class="f-qr">
+            <img src="${B.staticQr}" alt="Mã QR chuyển khoản ACB ${B.accountNo}" width="132" height="132" loading="lazy">
+            <div>
+              <b>${B.id}</b>
+              <span>${B.accountName}</span>
+              <button type="button" class="f-copy" data-copy-text="${B.accountNo}">${B.accountNo} <small>Sao chép</small></button>
+            </div>
+          </div>
+          <p class="f-pay-note">Tiền mặt khi nhận hàng hoặc chuyển khoản VietQR – mã QR kèm số tiền hiện sau khi đặt hàng.</p>
+        </div>
+      </div>
+      <div class="container f-bottom">
+        <span>© ${new Date().getFullYear()} COFFEE NHẪN TO GO · Drink to be happy.</span>
+        <span><a href="chinh-sach.html">Chính sách</a> · <a href="credits.html">Nguồn ảnh</a> · <a href="#top" data-top>Lên đầu trang ↑</a></span>
+      </div>
+    </div>
   </footer>
   <div class="float-contact">
     <a class="float-btn zalo" href="${S.zalo}" target="_blank" rel="noopener" aria-label="Chat Zalo với Nhẫn Coffee">Zalo</a>
@@ -615,4 +653,17 @@
     return `ĐƠN HÀNG ${o.code} – ${S.name}\n${lines}\n\nKhách: ${o.customer.name} – ${o.customer.phone}\n${o.delivery.method === "ship" ? `Giao tới: ${o.delivery.address}` : `Nhận tại: ${o.delivery.branch}`}\nThời gian: ${o.delivery.time}\nThanh toán: ${o.payment}${o.note ? `\nGhi chú: ${o.note}` : ""}`;
   };
   N.copy = async (text) => { try { await navigator.clipboard.writeText(text); return true; } catch { return false; } };
+  // copy buttons anywhere: <button data-copy-text="...">
+  document.addEventListener("click", async (e) => {
+    const b = e.target.closest("[data-copy-text]");
+    if (!b) return;
+    N.toast((await N.copy(b.dataset.copyText)) ? `Đã sao chép: ${b.dataset.copyText}` : b.dataset.copyText);
+  });
+  // VietQR image (amount + transfer note pre-filled). Note: only A–Z 0–9 and spaces are safe in the note.
+  N.qrUrl = ({ amount, note } = {}) => {
+    const B = S.bank, q = new URLSearchParams({ accountName: B.accountName });
+    if (amount) q.set("amount", String(Math.round(amount)));
+    if (note) q.set("addInfo", String(note).normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/đ/gi, "d").replace(/[^A-Za-z0-9 ]/g, " ").slice(0, 50));
+    return `https://img.vietqr.io/image/${B.id}-${B.accountNo}-compact2.png?${q}`;
+  };
 })();
