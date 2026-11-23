@@ -517,9 +517,8 @@
     const y = scrollY, dy = y - lastY;
     header.classList.toggle("is-stuck", y > 40);
     const busy = document.body.style.overflow === "hidden" || header.matches(":hover") || header.contains(document.activeElement);
-    if (y < 160 || busy || STATIC || reduced) header.classList.remove("is-hidden");
-    else if (dy > 6) header.classList.add("is-hidden");
-    else if (dy < -6) header.classList.remove("is-hidden");
+    void busy; void dy; // header always stays visible (owner preference) – no hide-on-scroll
+    header.classList.remove("is-hidden");
     lastY = y;
   };
   addEventListener("scroll", onScroll, { passive: true });
