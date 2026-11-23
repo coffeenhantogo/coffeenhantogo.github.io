@@ -114,18 +114,6 @@
   const B = S.bank;
   const footerHTML = `
   <footer class="footer" id="contact">
-    <div class="footer-cta">
-      <div class="container footer-cta-inner">
-        <div>
-          <h3>Thèm một ly cà phê?</h3>
-          <p>Đặt online hoặc nhắn Zalo – ghé lấy ngay, không cần chờ.</p>
-        </div>
-        <div class="footer-cta-actions">
-          <a class="btn btn-ink" href="thuc-don.html">Đặt món ngay</a>
-          <a class="btn btn-ghost-dark" href="${S.zalo}" target="_blank" rel="noopener">Zalo ${S.phoneDisplay}</a>
-        </div>
-      </div>
-    </div>
     <div class="footer-main">
       <div class="container footer-grid">
         <div class="f-brand">
