@@ -65,7 +65,7 @@
           <div class="ss-text"><b data-open-title>Đang nhận đơn online</b><p>Tắt khi quán nghỉ hoặc quá tải: khách vẫn xem thực đơn nhưng không gửi đơn được, website hiện thông báo kèm lời nhắn bên dưới.</p>
             <label class="field" style="margin:10px 0 0"><span>Lời nhắn khi tạm ngưng</span><input class="input" maxlength="140" data-note placeholder="VD: Quán nghỉ Tết, nhận đơn lại từ 05/02."></label>
           </div>
-          <label class="switch" title="Bật / tắt nhận đơn"><input type="checkbox" data-open><span aria-hidden="true"></span><em class="sr-only">Nhận đơn online</em></label>
+          <label class="switch" title="Bật / tắt nhận đơn"><input type="checkbox" data-shop-open><span aria-hidden="true"></span><em class="sr-only">Nhận đơn online</em></label>
         </div>
         <div class="mn-head"><h2>Món &amp; giá</h2><p>Bấm <b>Còn hàng / Hết hàng</b> để đổi ngay. Sửa giá rồi bấm <b>Lưu giá</b>. Giá gốc là giá trong thực đơn ban đầu.</p></div>
         <div class="mn-list" data-mlist></div>
@@ -266,12 +266,16 @@
     const GROUP_T = { "ca-phe": "Cà phê Moka", "bac-xiu": "Bạc xỉu", "tra-sua": "Trà sữa & sữa", "ca-phe-xay": "Cà phê xay 1kg" };
     const curShop = () => JSON.parse(JSON.stringify({ open: N.shop.open, note: N.shop.note, soldOut: N.shop.soldOut, prices: N.shop.prices }));
     let pricesDirty = false;
+    // apply locally first (so quick successive edits build on each other), then write; roll back on failure
     const saveShop = async (next, msg) => {
+      const prev = curShop();
+      N.setShop(next);
       try {
         await shopRef.set({ ...next, updatedAt: FV.serverTimestamp(), updatedBy: u.email });
-        N.setShop(next); N.toast(msg); return true;
+        N.toast(msg); return true;
       } catch (err) {
-        N.toast(err && err.code === "permission-denied" ? "Chưa lưu được: hãy dán quy tắc Firestore mới (firestore.rules) rồi bấm Publish." : api.errorText(err));
+        N.setShop(prev);
+        N.toast(err && err.code === "permission-denied" ? "Chưa lưu được: tài khoản không có quyền quản trị hoặc quy tắc Firestore chưa được cập nhật." : api.errorText(err));
         renderMenu(true); return false;
       }
     };
@@ -279,7 +283,7 @@
     const valOf = (p, k) => (k === "price" ? p.price : p.priceBy[k]);
     function renderMenu(force) {
       const sh = N.shop;
-      $("[data-open]").checked = sh.open;
+      $("[data-shop-open]").checked = sh.open;
       $("[data-open-title]").textContent = sh.open ? "Đang nhận đơn online" : "Đang TẠM NGƯNG nhận đơn online";
       $("[data-shopbox]").classList.toggle("is-off", !sh.open);
       if (document.activeElement !== $("[data-note]")) $("[data-note]").value = sh.note;
@@ -343,7 +347,7 @@
         if (await saveShop(next, "Đã khôi phục giá gốc")) renderMenu(true);
       }
     });
-    $("[data-open]").addEventListener("change", async (e) => {
+    $("[data-shop-open]").addEventListener("change", async (e) => {
       const on = e.target.checked;
       if (!on && !confirm("Tạm ngưng nhận đơn online?\nKhách sẽ thấy thông báo và không gửi được đơn cho tới khi bạn bật lại.")) { e.target.checked = true; return; }
       const next = curShop(); next.open = on; next.note = $("[data-note]").value.trim().slice(0, 140);
