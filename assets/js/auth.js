@@ -34,7 +34,7 @@
     "auth/unauthorized-domain": "Tên miền chưa được cho phép trong Firebase (Authorized domains).",
     "auth/operation-not-allowed": "Phương thức đăng nhập này chưa được bật trong Firebase.",
     "auth/requires-recent-login": "Vui lòng đăng nhập lại để thực hiện thao tác này.",
-    "permission-denied": "Bạn không có quyền thực hiện thao tác này.",
+    "permission-denied": "Bạn không có quyền thực hiện thao tác này (hoặc quy tắc Firestore chưa được cập nhật).",
     "auth/credential-already-in-use": "Tài khoản Google này đã được dùng cho một tài khoản khác tại Nhẫn. Hãy chọn đúng Gmail của bạn.",
     "auth/provider-already-linked": "Tài khoản đã được liên kết Google.",
     "auth/user-mismatch": "Bạn đã chọn một tài khoản Google khác với tài khoản đã liên kết.",
@@ -160,6 +160,11 @@
           if (gp) await db.collection("users").doc(u.uid).set({ photoURL: gp, provider: "google.com" }, { merge: true }).catch(() => {});
           return gp;
         },
+        /* customers may cancel their own order while the shop has not confirmed it yet */
+        async cancelOrder(code) {
+          if (!api.user) throw new Error("not signed in");
+          await db.collection("orders").doc(code).update({ status: "cancelled", cancelledBy: "customer", cancelledAt: ts() });
+        },
         async myOrders() {
           if (!api.user) return [];
           const qs = await db.collection("orders").where("uid", "==", api.user.uid).limit(100).get();
@@ -189,6 +194,12 @@
           await ref.set(data, { merge: true });
         } catch { /* stats are best-effort */ }
       };
+
+      // shop settings (open / sold-out / prices) – public, live on every page
+      db.collection("settings").doc("shop").onSnapshot(
+        (s) => N.setShop && N.setShop(s.exists ? s.data() : null),
+        () => N._shopResolve && N._shopResolve(N.shop), // rules not published yet → keep cached values
+      );
 
       // custom avatar cache (per uid) so the header shows it instantly on every page
       const photoKey = (uid) => `nhan-photo-${uid}`;

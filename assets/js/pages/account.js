@@ -191,6 +191,7 @@
             <p class="ao-meta">${when(o)} · ${o.items.reduce((s, i) => s + i.qty, 0)} món · ${o.delivery.method === "ship" ? "Giao tận nơi" : "Nhận tại quán"}</p>
             <p class="ao-items">${o.items.map((i) => `${N.esc(i.name)} ×${i.qty}`).join(", ")}</p>
             <div class="ao-foot"><span>${N.esc(o.payment)}</span><b>${N.esc(o.totalText)}</b></div>
+            ${o.status === "pending" ? `<div class="ao-act"><a class="auth-link" href="dat-hang-thanh-cong.html?ma=${encodeURIComponent(o.code)}">Chi tiết / Hủy đơn</a></div>` : ""}
           </article>`).join("")}</div>`
           : `<div class="cart-empty" style="padding:30px 10px"><p>Bạn chưa có đơn hàng nào.</p><a class="btn btn-lime" href="thuc-don.html">Đặt món đầu tiên</a></div>`;
         N.anim(box.querySelectorAll(".acct-order"), "up");

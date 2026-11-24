@@ -58,7 +58,7 @@
   };
   const board = document.createElement("div");
   board.className = "price-board";
-  board.innerHTML = `
+  const buildBoard = () => { board.innerHTML = `
     <h2>Bảng giá</h2>
     <p>Giá niêm yết tại quán (VNĐ).</p>
     <table class="price-table">
@@ -70,9 +70,12 @@
     <table class="price-table">
       <thead><tr><th>Cà phê xay</th><th></th><th>Gói 1kg</th></tr></thead>
       <tbody>${N.PRODUCTS.filter((p) => p.type === "ground").map((p) => `<tr><td><a href="${N.productUrl(p)}">${N.esc(p.name.replace(/ – 1kg$/, ""))}</a></td><td></td><td>${cell(p.price)}</td></tr>`).join("")}</tbody>
-    </table>`;
+    </table>`; };
+  buildBoard();
   menuEl.after(board);
   N.anim([board], "up", { stagger: false });
   N.anim(".toolbar", "up", { stagger: false });
   render();
+  // admin changed prices / sold-out items → refresh
+  document.addEventListener("nhan:shop", () => { render(); buildBoard(); });
 })();

@@ -61,4 +61,5 @@
   sortEl.addEventListener("change", render);
   N.anim(".toolbar", "up", { stagger: false });
   render();
+  document.addEventListener("nhan:shop", render);
 })();

@@ -129,12 +129,21 @@
     root.querySelector("[data-n]").textContent = N.cart.count();
     root.querySelector("[data-items]").innerHTML = items.map((i) => {
       const p = N.byId[i.id];
-      return `<div class="sum-item"><img src="${N.img(p.img)}" alt=""><div><b>${N.esc(p.name)}</b><small>${N.esc(N.optSummary(i.opts))}${i.note ? ` · ${N.esc(i.note)}` : ""}</small></div><span class="q">×${i.qty}</span></div>`;
+      return `<div class="sum-item${p.soldOut ? " is-out" : ""}"><img src="${N.img(p.img)}" alt=""><div><b>${N.esc(p.name)}</b><small>${p.soldOut ? '<span class="c-soldout">Tạm hết – hãy xóa khỏi giỏ</span> ' : ""}${N.esc(N.optSummary(i.opts))}${i.note ? ` · ${N.esc(i.note)}` : ""}</small></div><span class="q">×${i.qty}</span></div>`;
     }).join("");
     root.querySelector("[data-sub]").textContent = t.text;
     root.querySelector("[data-total]").textContent = t.text;
+    // shop paused by the admin
+    let pz = root.querySelector("[data-paused]");
+    if (!N.shop.open) {
+      if (!pz) { pz = document.createElement("div"); pz.className = "form-alert warn"; pz.setAttribute("data-paused", ""); submitBtn.before(pz); }
+      const nt = N.shop.note.trim();
+      pz.innerHTML = `<b>Quán đang tạm ngưng nhận đơn online.</b> ${N.esc(nt)}${nt && !/[.!?…]$/.test(nt) ? "." : ""} Vui lòng gọi <a href="tel:${S.phone}"><b>${S.phoneDisplay}</b></a> hoặc nhắn Zalo.`;
+    } else if (pz) pz.remove();
+    submitBtn.disabled = !N.shop.open;
   }
   N.cart.onChange(renderSummary);
+  document.addEventListener("nhan:shop", renderSummary);
   renderSummary();
 
   function syncMethod() {
@@ -197,6 +206,16 @@
       el && el.scrollIntoView({ behavior: "smooth", block: "center" });
       el && el.focus && setTimeout(() => el.focus(), 300);
       return;
+    }
+    // latest shop settings: paused shop / sold-out items / current prices
+    submitBtn.disabled = true;
+    await Promise.race([N.shopReady, new Promise((r) => setTimeout(r, 4000))]);
+    submitBtn.disabled = false;
+    if (!N.shop.open) { renderSummary(); errBox.innerHTML = `Quán đang tạm ngưng nhận đơn online. Vui lòng gọi ${S.phoneDisplay}.`; errBox.hidden = false; return; }
+    const out = N.cart.items().filter((i) => N.byId[i.id].soldOut).map((i) => N.byId[i.id].name);
+    if (out.length) {
+      errBox.textContent = `Món đang tạm hết: ${[...new Set(out)].join(", ")}. Vui lòng xóa khỏi giỏ hàng rồi đặt lại.`;
+      errBox.hidden = false; N.open("cartDrawer"); return;
     }
     const order = buildOrder(phone);
     N.store.set(PROFILE_KEY, { name: order.customer.name, phone, email: order.customer.email, method: order.delivery.method, address: order.delivery.address, branch: order.delivery.branch });

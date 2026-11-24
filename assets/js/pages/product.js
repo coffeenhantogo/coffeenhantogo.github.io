@@ -46,6 +46,7 @@
         <p class="pd-price" data-price>${N.priceText(p, N.defaultOpts(p))}<small>${N.unitPrice(p, N.defaultOpts(p)) == null ? "Nhân viên báo giá khi xác nhận đơn" : p.priceBy ? "Giá theo size bạn chọn" : ""}</small></p>
         <p class="pd-short">${N.esc(p.short)}</p>
         <div class="pd-tags">${(p.notes || []).map((t) => `<span class="lime">${N.esc(t)}</span>`).join("")}${p.roast ? `<span>${N.esc(p.roast)}</span>` : ""}${p.bean ? `<span>${N.esc(p.bean)}</span>` : ""}</div>
+        <div class="form-alert warn pd-out" data-soldout hidden><b>Món này đang tạm hết.</b> Bạn tham khảo các món khác bên dưới, hoặc gọi ${N.STORE.phoneDisplay} để hỏi khi nào có lại.</div>
         <form data-buy>
           ${N.optionsFieldsHTML(p, N.defaultOpts(p), "pd")}
           <label class="field"><span>Ghi chú (tùy chọn)</span><input type="text" name="note" maxlength="120" placeholder="${isDrink ? "VD: ít ngọt hơn, đá để riêng…" : "VD: chia 2 túi nhỏ…"}"></label>
@@ -89,8 +90,15 @@
   // buy
   const form = root.querySelector("[data-buy]");
   form.addEventListener("change", () => { root.querySelector("[data-price]").firstChild.textContent = N.priceText(p, N.readOpts(form)); });
+  const syncPd = () => {
+    root.querySelector("[data-price]").firstChild.textContent = N.priceText(p, N.readOpts(form));
+    form.querySelectorAll("button[type=submit]").forEach((b) => (b.disabled = !!p.soldOut));
+    root.querySelector("[data-soldout]").hidden = !p.soldOut;
+  };
+  syncPd();
   form.addEventListener("submit", (e) => {
     e.preventDefault();
+    if (p.soldOut) { N.toast("Món này đang tạm hết"); return; }
     const qty = Math.max(1, Math.min(99, parseInt(form.qty.value, 10) || 1));
     N.fly && N.fly(mainImg);
     N.cart.add(p.id, qty, N.readOpts(form), form.note.value.trim());
@@ -102,7 +110,9 @@
   // related
   const others = N.PRODUCTS.filter((x) => x.id !== p.id);
   const rel = [...others.filter((x) => x.type === p.type), ...others.filter((x) => x.type !== p.type && x.featured)].slice(0, 4);
-  document.querySelector("[data-related]").innerHTML = rel.map(N.card).join("");
+  const relEl = document.querySelector("[data-related]");
+  relEl.innerHTML = rel.map(N.card).join("");
+  document.addEventListener("nhan:shop", () => { syncPd(); relEl.innerHTML = rel.map(N.card).join(""); relEl.querySelectorAll(".p-card").forEach((c) => c.classList.add("in")); });
   N.anim(document.querySelectorAll("[data-related] .p-card"), "up", { mod: 4 });
   N.anim(".related .section-head", "blur", { stagger: false });
 })();

@@ -28,7 +28,7 @@
       return;
     }
 
-    let showDeleted = false; let orders = [], users = [], filter = "active", q = "", cq = "", csort = "new", firstLoad = true, view = location.hash === "#khach-hang" ? "customers" : "orders", autoAll = true;
+    let showDeleted = false; let orders = [], users = [], filter = "active", q = "", cq = "", csort = "new", firstLoad = true, view = location.hash === "#khach-hang" ? "customers" : location.hash === "#thuc-don" ? "menu" : "orders", autoAll = true;
     root.innerHTML = `
       <div class="admin-head" data-reveal="up">
         <div><span class="kicker">Quản trị</span><h1>Bảng điều khiển</h1><p>Cập nhật theo thời gian thực · ${N.esc(u.email)} · <a class="auth-link" href="tai-khoan.html">Hồ sơ &amp; ảnh đại diện</a></p></div>
@@ -37,6 +37,7 @@
       <div class="admin-tabs" role="tablist">
         <button role="tab" data-view="orders">Đơn hàng <small data-n-orders>0</small></button>
         <button role="tab" data-view="customers">Khách hàng <small data-n-users>0</small></button>
+        <button role="tab" data-view="menu">Thực đơn <small data-n-out hidden></small></button>
       </div>
       <section data-pane="orders">
         <div class="admin-stats" data-stats></div>
@@ -58,6 +59,20 @@
           <div class="toolbar-right"><label class="search-inline"><svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><circle cx="11" cy="11" r="6.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="m16 16 4 4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg><input class="input" type="search" placeholder="Tìm tên, email, SĐT…" data-cq></label></div>
         </div>
         <div class="cust-list" data-ulist></div>
+      </section>
+      <section data-pane="menu" hidden>
+        <div class="shop-switch" data-shopbox>
+          <div class="ss-text"><b data-open-title>Đang nhận đơn online</b><p>Tắt khi quán nghỉ hoặc quá tải: khách vẫn xem thực đơn nhưng không gửi đơn được, website hiện thông báo kèm lời nhắn bên dưới.</p>
+            <label class="field" style="margin:10px 0 0"><span>Lời nhắn khi tạm ngưng</span><input class="input" maxlength="140" data-note placeholder="VD: Quán nghỉ Tết, nhận đơn lại từ 05/02."></label>
+          </div>
+          <label class="switch" title="Bật / tắt nhận đơn"><input type="checkbox" data-open><span aria-hidden="true"></span><em class="sr-only">Nhận đơn online</em></label>
+        </div>
+        <div class="mn-head"><h2>Món &amp; giá</h2><p>Bấm <b>Còn hàng / Hết hàng</b> để đổi ngay. Sửa giá rồi bấm <b>Lưu giá</b>. Giá gốc là giá trong thực đơn ban đầu.</p></div>
+        <div class="mn-list" data-mlist></div>
+        <div class="mn-foot">
+          <button class="btn btn-lime" type="button" data-msave>Lưu giá</button>
+          <button class="btn btn-outline" type="button" data-mreset>Khôi phục toàn bộ giá gốc</button>
+        </div>
       </section>`;
     const $ = (s) => root.querySelector(s);
     N.anim(root.querySelectorAll("[data-reveal]"), "up", { stagger: false });
@@ -66,7 +81,7 @@
       view = v;
       root.querySelectorAll("[data-view]").forEach((b) => { const on = b.dataset.view === v; b.classList.toggle("is-active", on); b.setAttribute("aria-selected", on); });
       root.querySelectorAll("[data-pane]").forEach((p) => (p.hidden = p.dataset.pane !== v));
-      history.replaceState(null, "", v === "customers" ? "#khach-hang" : location.pathname);
+      history.replaceState(null, "", v === "customers" ? "#khach-hang" : v === "menu" ? "#thuc-don" : location.pathname);
     };
     root.addEventListener("click", (e) => { const b = e.target.closest("[data-view]"); if (b) setView(b.dataset.view); });
     setView(view);
@@ -101,7 +116,7 @@
         const where = o.delivery.method === "ship" ? `🛵 Giao: ${N.esc(o.delivery.address)}` : `🏠 Nhận tại: ${N.esc(o.delivery.branch)}`;
         return `<article class="admin-order ${cls}">
           <div class="ad-top">
-            <div><b class="ad-code">${N.esc(o.code)}</b> <span class="st ${cls}">${st}</span>${o.uid ? ' <span class="st st-ok">Thành viên</span>' : ""}</div>
+            <div><b class="ad-code">${N.esc(o.code)}</b> <span class="st ${cls}">${st}</span>${o.cancelledBy === "customer" ? ' <span class="st st-cancel">Khách tự hủy</span>' : ""}${o.uid ? ' <span class="st st-ok">Thành viên</span>' : ""}</div>
             <span class="ad-time">${fmtDT(d)}</span>
           </div>
           <div class="ad-body">
@@ -112,6 +127,7 @@
           <div class="ad-foot">
             <span>${N.esc(o.payment)} · <b>${N.esc(o.totalText)}</b></span>
             <div class="ad-actions">
+              <button class="btn btn-outline btn-sm" type="button" data-print="${N.esc(o.code)}">In phiếu</button>
               <a class="btn btn-outline btn-sm" href="https://zalo.me/${N.esc(o.customer.phone)}" target="_blank" rel="noopener">Zalo khách</a>
               <select class="select ad-status" data-code="${N.esc(o.code)}">${Object.entries(STATUS).map(([k, [t]]) => `<option value="${k}" ${o.status === k ? "selected" : ""}>${t}</option>`).join("")}</select>
             </div>
@@ -216,9 +232,134 @@
     });
     $("[data-cq]").addEventListener("input", (e) => { cq = e.target.value; renderUsers(); });
 
+    /* ---------------- print order slip (80mm receipt printer or A4) ---------------- */
+    const printOrder = (o) => {
+      const S = N.STORE, e = N.esc;
+      const where = o.delivery.method === "ship" ? `Giao tới: ${e(o.delivery.address)}` : `Nhận tại: ${e(o.delivery.branch)}`;
+      const html = `<!doctype html><html lang="vi"><head><meta charset="utf-8"><title>Phiếu ${e(o.code)}</title><style>
+        @page { size: 80mm auto; margin: 4mm; }
+        body { font-family: Arial, Helvetica, sans-serif; font-size: 12.5px; color: #000; width: 72mm; margin: 0 auto; line-height: 1.35; }
+        h1 { font-size: 16px; text-align: center; margin: 0; letter-spacing: .04em; } .c { text-align: center; }
+        hr { border: 0; border-top: 1px dashed #000; margin: 7px 0; } table { width: 100%; border-collapse: collapse; }
+        td { vertical-align: top; padding: 2px 0; } td.r { text-align: right; white-space: nowrap; padding-left: 6px; }
+        .big { font-size: 15px; font-weight: 700; } small { color: #333; } p { margin: 2px 0; }
+      </style></head><body>
+        <h1>COFFEE NHẪN TO GO</h1><div class="c">${S.phoneDisplay} · Drink to be happy</div><hr>
+        <div class="c big">${e(o.code)}</div><div class="c">${fmtDT(dateOf(o))}</div><hr>
+        <p><b>Khách:</b> ${e(o.customer.name)} – ${e(o.customer.phone)}</p><p>${where}</p><p><b>Thời gian:</b> ${e(o.delivery.time)}</p><hr>
+        <table>${o.items.map((i) => `<tr><td><b>${i.qty}×</b> ${e(i.name)}${i.opts ? `<br><small>${e(i.opts)}</small>` : ""}${i.note ? `<br><small>Ghi chú: ${e(i.note)}</small>` : ""}</td><td class="r">${i.price != null ? N.fmtVND(i.price * i.qty) : ""}</td></tr>`).join("")}</table><hr>
+        <table><tr><td class="big">TỔNG</td><td class="r big">${e(o.totalText)}</td></tr></table>
+        <p>Thanh toán: ${e(o.payment)}</p>${o.note ? `<p><b>Ghi chú đơn:</b> ${e(o.note)}</p>` : ""}<hr>
+        <div class="c">Cảm ơn bạn đã ủng hộ Nhẫn!</div>
+      </body></html>`;
+      const f = document.createElement("iframe");
+      f.setAttribute("aria-hidden", "true");
+      f.style.cssText = "position:fixed;right:0;bottom:0;width:0;height:0;border:0;visibility:hidden";
+      document.body.appendChild(f);
+      const d = f.contentDocument; d.open(); d.write(html); d.close();
+      setTimeout(() => { f.contentWindow.focus(); f.contentWindow.print(); setTimeout(() => f.remove(), 1500); }, 250);
+    };
+    root.addEventListener("click", (e) => { const b = e.target.closest("[data-print]"); if (b) { const o = orders.find((x) => x.code === b.dataset.print); o && printOrder(o); } });
+
+    /* ---------------- menu: sold-out toggles, prices, pause online orders (settings/shop) ---------------- */
+    const shopRef = api.db.collection("settings").doc("shop");
+    const GROUP_T = { "ca-phe": "Cà phê Moka", "bac-xiu": "Bạc xỉu", "tra-sua": "Trà sữa & sữa", "ca-phe-xay": "Cà phê xay 1kg" };
+    const curShop = () => JSON.parse(JSON.stringify({ open: N.shop.open, note: N.shop.note, soldOut: N.shop.soldOut, prices: N.shop.prices }));
+    let pricesDirty = false;
+    const saveShop = async (next, msg) => {
+      try {
+        await shopRef.set({ ...next, updatedAt: FV.serverTimestamp(), updatedBy: u.email });
+        N.setShop(next); N.toast(msg); return true;
+      } catch (err) {
+        N.toast(err && err.code === "permission-denied" ? "Chưa lưu được: hãy dán quy tắc Firestore mới (firestore.rules) rồi bấm Publish." : api.errorText(err));
+        renderMenu(true); return false;
+      }
+    };
+    const baseOf = (p, k) => (k === "price" ? p._base.price : p._base.priceBy[k]);
+    const valOf = (p, k) => (k === "price" ? p.price : p.priceBy[k]);
+    function renderMenu(force) {
+      const sh = N.shop;
+      $("[data-open]").checked = sh.open;
+      $("[data-open-title]").textContent = sh.open ? "Đang nhận đơn online" : "Đang TẠM NGƯNG nhận đơn online";
+      $("[data-shopbox]").classList.toggle("is-off", !sh.open);
+      if (document.activeElement !== $("[data-note]")) $("[data-note]").value = sh.note;
+      const nOut = N.PRODUCTS.filter((p) => p.soldOut).length;
+      const badge = $("[data-n-out]"); badge.hidden = !nOut; badge.textContent = `${nOut} hết`;
+      if (pricesDirty && !force) { // keep unsaved price edits; only refresh stock buttons
+        root.querySelectorAll("[data-pid]").forEach((row) => { const p = N.byId[row.dataset.pid]; row.classList.toggle("is-out", p.soldOut); const b = row.querySelector("[data-stock]"); b.classList.toggle("out", p.soldOut); b.textContent = p.soldOut ? "Hết hàng" : "Còn hàng"; b.setAttribute("aria-pressed", String(!p.soldOut)); });
+        return;
+      }
+      pricesDirty = false;
+      const groups = [...new Set(N.PRODUCTS.map((p) => p.group))];
+      $("[data-mlist]").innerHTML = groups.map((g) => `
+        <div class="mn-group"><h3>${N.esc(GROUP_T[g] || g)}</h3>
+          ${N.PRODUCTS.filter((p) => p.group === g).map((p) => {
+            const keys = p._base.priceBy ? Object.keys(p._base.priceBy) : ["price"];
+            return `<div class="mn-row ${p.soldOut ? "is-out" : ""}" data-pid="${p.id}">
+              <img src="${N.img(p.img)}" alt="" loading="lazy">
+              <div class="mn-name"><b>${N.esc(p.name)}</b><small>${N.esc(p.cat)}</small></div>
+              <div class="mn-prices">${keys.map((k) => {
+                const v = valOf(p, k), b = baseOf(p, k);
+                return `<label class="mn-price"><span>${k === "price" ? (p.type === "ground" ? "Gói 1kg" : "Ly lớn") : N.esc(k)}</span><input class="input" type="number" inputmode="numeric" min="1000" max="10000000" step="1000" data-k="${N.esc(k)}" value="${v ?? ""}" aria-label="Giá ${N.esc(p.name)} ${N.esc(k === "price" ? "" : k)}"><small class="${v !== b ? "chg" : ""}">${v !== b ? "Đã đổi · " : ""}Gốc ${b != null ? N.fmtVND(b) : "—"}</small></label>`;
+              }).join("")}</div>
+              <button type="button" class="mn-stock ${p.soldOut ? "out" : ""}" data-stock="${p.id}" aria-pressed="${!p.soldOut}">${p.soldOut ? "Hết hàng" : "Còn hàng"}</button>
+            </div>`;
+          }).join("")}
+        </div>`).join("");
+    }
+    root.addEventListener("input", (e) => { if (e.target.closest("[data-k]")) pricesDirty = true; });
+    root.addEventListener("click", async (e) => {
+      const st = e.target.closest("[data-stock]");
+      if (st) {
+        const id = st.dataset.stock, p = N.byId[id], next = curShop();
+        if (next.soldOut[id]) delete next.soldOut[id]; else next.soldOut[id] = true;
+        st.disabled = true;
+        await saveShop(next, next.soldOut[id] ? `“${p.name}”: đã báo HẾT HÀNG` : `“${p.name}”: đã bán lại`);
+        st.disabled = false;
+        return;
+      }
+      if (e.target.closest("[data-msave]")) {
+        const prices = {}; let bad = null;
+        root.querySelectorAll("[data-pid]").forEach((row) => {
+          const p = N.byId[row.dataset.pid];
+          row.querySelectorAll("[data-k]").forEach((inp) => {
+            const k = inp.dataset.k, b = baseOf(p, k);
+            if (inp.value === "" && b == null) return;
+            const v = Math.round(Number(inp.value));
+            const ok = Number.isFinite(v) && v >= 1000 && v <= 10000000;
+            inp.classList.toggle("is-bad", !ok);
+            if (!ok) { bad = bad || inp; return; }
+            if (v !== b) (prices[p.id] = prices[p.id] || {})[k] = v;
+          });
+        });
+        if (bad) { bad.focus(); N.toast("Giá phải từ 1.000đ đến 10.000.000đ"); return; }
+        const next = curShop(); next.prices = prices;
+        if (await saveShop(next, "Đã lưu giá – website cập nhật ngay cho khách")) renderMenu(true);
+        return;
+      }
+      if (e.target.closest("[data-mreset]")) {
+        if (!confirm("Khôi phục toàn bộ giá về giá gốc trong thực đơn?")) return;
+        const next = curShop(); next.prices = {};
+        if (await saveShop(next, "Đã khôi phục giá gốc")) renderMenu(true);
+      }
+    });
+    $("[data-open]").addEventListener("change", async (e) => {
+      const on = e.target.checked;
+      if (!on && !confirm("Tạm ngưng nhận đơn online?\nKhách sẽ thấy thông báo và không gửi được đơn cho tới khi bạn bật lại.")) { e.target.checked = true; return; }
+      const next = curShop(); next.open = on; next.note = $("[data-note]").value.trim().slice(0, 140);
+      await saveShop(next, on ? "Đã MỞ nhận đơn online" : "Đã TẠM NGƯNG nhận đơn online");
+    });
+    $("[data-note]").addEventListener("change", async (e) => {
+      const next = curShop(); next.note = e.target.value.trim().slice(0, 140);
+      await saveShop(next, "Đã lưu lời nhắn");
+    });
+    document.addEventListener("nhan:shop", () => renderMenu());
+    renderMenu(true);
+
     /* ---------------- realtime data ---------------- */
     api.db.collection("orders").orderBy("createdAt", "desc").limit(500).onSnapshot((snap) => {
       const added = snap.docChanges().filter((c) => c.type === "added").length;
+      if (!firstLoad) snap.docChanges().forEach((c) => { const d = c.doc.data(); if (c.type === "modified" && d.status === "cancelled" && d.cancelledBy === "customer") { beep(); N.toast(`Khách đã hủy đơn ${d.code}`); } });
       orders = snap.docs.map((d) => d.data());
       if (!firstLoad && added) { beep(); N.toast(`Có ${added} đơn mới!`); }
       firstLoad = false;

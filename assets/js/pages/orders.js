@@ -11,6 +11,21 @@
     ${o.note ? `<div class="od-row"><span>Ghi chú</span><b>${N.esc(o.note)}</b></div>` : ""}
     <div class="od-row"><span>Tạm tính</span><b>${N.esc(o.totalText)}</b></div>`;
 
+  /* customer cancels an order the shop has not confirmed yet (allowed by firestore.rules) */
+  const cancelOrder = async (code, btn) => {
+    if (!confirm(`Hủy đơn ${code}?
+Chỉ hủy được khi quán chưa xác nhận đơn.`)) return;
+    const api = await N.fbReady;
+    if (!api || !api.user) { N.toast("Vui lòng đăng nhập để hủy đơn"); return; }
+    if (btn) { btn.disabled = true; btn.textContent = "Đang hủy…"; }
+    try { await api.cancelOrder(code); N.toast(`Đã hủy đơn ${code}`); }
+    catch (err) {
+      N.toast(err && err.code === "permission-denied" ? "Quán đã xác nhận đơn – vui lòng gọi " + S.phoneDisplay + " để hủy." : api.errorText(err));
+      if (btn) { btn.disabled = false; btn.textContent = "Hủy đơn"; }
+    }
+  };
+  document.addEventListener("click", (e) => { const b = e.target.closest("[data-cancel]"); if (b) cancelOrder(b.dataset.cancel, b); });
+
   const zaloSend = async (o) => {
     const ok = await N.copy(N.orderText(o));
     N.toast(ok ? "Đã sao chép đơn – dán vào Zalo để gửi cho quán" : "Mở Zalo để gửi đơn cho quán");
@@ -77,6 +92,7 @@
         <div class="order-detail">${detailRows(o)}</div>
         <div class="success-actions">
           <button class="btn ${received ? "btn-outline" : "btn-lime"}" type="button" data-zalo>Gửi đơn qua Zalo</button>
+          ${received && live === "pending" ? `<button class="btn btn-outline btn-danger" type="button" data-cancel="${N.esc(o.code)}">Hủy đơn</button>` : ""}
           <a class="btn btn-outline" href="don-hang.html">Đơn hàng của tôi</a>
           <a class="btn ${received ? "btn-lime" : "btn-outline"}" href="thuc-don.html">Tiếp tục mua</a>
         </div>
@@ -88,7 +104,9 @@
         if (!s.exists) return;
         const [t2, c2] = ST[s.data().status] || ST.pending;
         const el = sRoot.querySelector("[data-live-status]");
-        if (el) { el.className = `st ${c2}`; el.textContent = t2; }
+        if (el) { el.className = `st ${c2}`; el.textContent = t2 + (s.data().cancelledBy === "customer" ? " (bạn đã hủy)" : ""); }
+        const cb = sRoot.querySelector("[data-cancel]");
+        if (cb && s.data().status !== "pending") cb.remove();
       }, () => {});
     }
   })();
@@ -124,7 +142,7 @@
         const [st, cls] = STATUS[o.status] || STATUS.pending;
         return `<article class="order-item">
           <div>
-            <h3>${N.esc(o.code)} <span class="st ${cls}">${st}</span></h3>
+            <h3>${N.esc(o.code)} <span class="st ${cls}">${st}${o.cancelledBy === "customer" ? " (bạn đã hủy)" : ""}</span></h3>
             <p>${when(o)} · ${o.items.reduce((s, i) => s + i.qty, 0)} món · ${o.delivery.method === "ship" ? "Giao tận nơi" : "Nhận tại quán"} · <b>${N.esc(o.totalText)}</b></p>
             <p>${o.items.map((i) => `${N.esc(i.name)} ×${i.qty}`).join(", ")}</p>
             ${progress(o.status)}
@@ -132,6 +150,7 @@
           <div style="display:flex;gap:8px;flex-wrap:wrap">
             <a class="btn btn-outline btn-sm" href="dat-hang-thanh-cong.html?ma=${encodeURIComponent(o.code)}">Chi tiết</a>
             <button class="btn btn-lime btn-sm" type="button" data-reorder="${N.esc(o.code)}">Đặt lại</button>
+            ${o.status === "pending" ? `<button class="btn btn-outline btn-sm btn-danger" type="button" data-cancel="${N.esc(o.code)}">Hủy đơn</button>` : ""}
           </div>
         </article>`;
       }).join("")}</div>

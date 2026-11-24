@@ -43,6 +43,30 @@
   };
   Object.assign(N, { esc, fmtVND, img, byId, productUrl, unitPrice, priceText, norm, optSummary, store, STATIC, params });
 
+  /* ---------- shop settings managed by the admin (Firestore settings/shop) ----------
+     { open: bool, note: string, soldOut: {id: true}, prices: {id: {price} | {"<size>": n}} }
+     Applied by mutating N.PRODUCTS (base values from data.js kept in p._base). Cached in
+     localStorage so every page renders with the latest known settings instantly; auth.js
+     streams fresh values and calls N.setShop(), which fires "nhan:shop" when anything changed. */
+  const SHOP_KEY = "nhan-shop-v1";
+  N.PRODUCTS.forEach((p) => { p._base = { price: p.price ?? null, priceBy: p.priceBy ? { ...p.priceBy } : null }; });
+  const okPrice = (v) => Number.isFinite(v) && v >= 1000 && v <= 10000000;
+  N.applyShop = (s) => {
+    s = s || {};
+    N.shop = { open: s.open !== false, note: String(s.note || ""), soldOut: s.soldOut || {}, prices: s.prices || {} };
+    N.PRODUCTS.forEach((p) => {
+      const ov = N.shop.prices[p.id] || {};
+      p.price = p._base.price;
+      p.priceBy = p._base.priceBy ? { ...p._base.priceBy } : null;
+      if (p.priceBy) { for (const k of Object.keys(p.priceBy)) if (okPrice(ov[k])) p.priceBy[k] = ov[k]; }
+      else if (okPrice(ov.price)) p.price = ov.price;
+      p.soldOut = !!N.shop.soldOut[p.id];
+    });
+  };
+  N.applyShop(store.get(SHOP_KEY, null));
+  N.shopReady = new Promise((r) => (N._shopResolve = r)); // first fresh settings (or cache after a timeout)
+  setTimeout(() => N._shopResolve(N.shop), 6000);
+
   /* ---------- icons ---------- */
   const IC = {
     pin: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2a7 7 0 0 0-7 7c0 5 7 13 7 13s7-8 7-13a7 7 0 0 0-7-7zm0 9.5A2.5 2.5 0 1 1 12 6.5a2.5 2.5 0 0 1 0 5z" fill="currentColor"/></svg>',
@@ -293,6 +317,7 @@
         <a class="c-name" href="${productUrl(p)}">${esc(p.name)}</a>
         ${optSummary(i.opts) ? `<div class="c-opts">${esc(optSummary(i.opts))}</div>` : ""}
         ${i.note ? `<div class="c-opts">Ghi chú: ${esc(i.note)}</div>` : ""}
+        ${p.soldOut ? `<div class="c-soldout">Món này đang tạm hết – vui lòng xóa khỏi giỏ</div>` : ""}
         <div class="c-row">
           <div class="qty" role="group" aria-label="Số lượng"><button type="button" aria-label="Giảm" data-qty="-1">−</button><span>${i.qty}</span><button type="button" aria-label="Tăng" data-qty="1">+</button></div>
           <span class="c-price">${priceText(p, i.opts)}</span>
@@ -346,6 +371,8 @@
   N.pick = (id, srcImg) => {
     const p = byId[id];
     if (!p) return;
+    if (p.soldOut) { N.toast(`“${p.name}” đang tạm hết – bạn chọn món khác nhé`); return; }
+    if (!N.shop.open) N.toast("Quán đang tạm ngưng nhận đơn online – bạn vẫn có thể thêm vào giỏ");
     if (!p.options || !Object.keys(p.options).length) { N.fly && N.fly(srcImg); N.cart.add(id); return; }
     optBox.innerHTML = `
       <div class="opt-head">
@@ -399,9 +426,9 @@
     if (p.price != null) return `<small>Giá</small><b>${fmtVND(p.price)}</b>`;
     return `<small>Giá</small><b>Liên hệ</b>`;
   };
-  N.card = (p) => `<article class="p-card">
+  N.card = (p) => `<article class="p-card${p.soldOut ? " is-soldout" : ""}">
       <a class="p-media-wrap" href="${productUrl(p)}" aria-label="${esc(p.name)}">
-        ${p.badge ? `<span class="p-badge">${esc(p.badge)}</span>` : ""}
+        ${p.soldOut ? `<span class="p-badge p-badge-out">Tạm hết</span>` : p.badge ? `<span class="p-badge">${esc(p.badge)}</span>` : ""}
         <span class="p-media"><img src="${img(p.img)}" alt="${esc(p.name)}" loading="lazy"></span>
       </a>
       <div class="p-body">
@@ -410,7 +437,7 @@
         ${p.short ? `<p class="p-desc">${esc(p.short)}</p>` : ""}
         <div class="p-foot">
           <div class="p-pricebox">${priceBox(p)}</div>
-          <button class="p-add" type="button" data-add="${p.id}" aria-label="Thêm ${esc(p.name)} vào giỏ">${IC.plus}</button>
+          <button class="p-add" type="button" data-add="${p.id}" ${p.soldOut ? `disabled aria-label="${esc(p.name)} đang tạm hết"` : `aria-label="Thêm ${esc(p.name)} vào giỏ"`}>${IC.plus}</button>
         </div>
       </div>
     </article>`;
@@ -552,6 +579,32 @@
     setTimeout(place, 50);
   })();
 
+  /* ---------- shop settings: live updates + "paused" banner ---------- */
+  const renderShopBanner = () => {
+    let b = document.querySelector("[data-shop-banner]");
+    if (N.shop.open) { if (b) b.hidden = true; return; }
+    if (!b) {
+      b = document.createElement("div");
+      b.className = "shop-paused"; b.setAttribute("data-shop-banner", ""); b.setAttribute("role", "status");
+      const main = document.querySelector("main");
+      main ? main.before(b) : document.body.prepend(b);
+    }
+    b.hidden = false;
+    b.innerHTML = `<div class="container"><span class="sp-dot" aria-hidden="true"></span><p><b>Quán đang tạm ngưng nhận đơn online.</b> ${esc(N.shop.note)}</p><a href="tel:${S.phone}">Gọi ${S.phoneDisplay}</a></div>`;
+  };
+  N.setShop = (raw) => {
+    const s = raw ? { open: raw.open !== false, note: raw.note || "", soldOut: raw.soldOut || {}, prices: raw.prices || {} } : null;
+    const changed = JSON.stringify(store.get(SHOP_KEY, null)) !== JSON.stringify(s);
+    store.set(SHOP_KEY, s);
+    if (changed) {
+      N.applyShop(s);
+      renderCart(); renderShopBanner();
+      document.dispatchEvent(new CustomEvent("nhan:shop", { detail: N.shop }));
+    }
+    N._shopResolve(N.shop);
+  };
+  renderShopBanner();
+
   /* ---------- accounts (Firebase, loaded only when configured) ---------- */
   N.fbReady = new Promise((res) => (N._fbResolve = res));
   if (N.FIREBASE && N.FIREBASE.apiKey) {
@@ -562,7 +615,8 @@
     s.onerror = () => N._fbResolve(null);
     document.body.appendChild(s);
     setTimeout(() => N._fbResolve(null), 12000); // never hang pages if Firebase cannot start
-  } else N._fbResolve(null);
+  } else { N._fbResolve(null); N._shopResolve(N.shop); }
+  N.fbReady.then((api) => { if (!api) N._shopResolve(N.shop); });
   const givenName = (s) => { s = String(s || "").trim(); if (s.includes("@") && !s.includes(" ")) return s.split("@")[0]; const w = s.split(/\s+/); return w[w.length - 1] || s; };
   /* avatar: Google profile photo when available, the initial underneath as fallback (image errors remove the img) */
   N.avatarImg = (url) => url && /^(https:\/\/|data:image\/(jpeg|png|webp);base64,)/.test(url) ?`<img src="${esc(url)}" alt="" referrerpolicy="no-referrer" loading="lazy" onerror="this.remove()">` : "";

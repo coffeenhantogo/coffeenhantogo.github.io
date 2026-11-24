@@ -4,10 +4,12 @@
 
   /* product grids */
   const groundGrid = document.querySelector('[data-grid="ground"]');
+  const drinksGrid = document.querySelector('[data-grid="drinks"]');
+  const renderProducts = () => {
   groundGrid.innerHTML = N.PRODUCTS.filter((p) => p.type === "ground").map((p) => `
-    <article class="feature-card">
+    <article class="feature-card${p.soldOut ? " is-soldout" : ""}">
       <a class="feature-media p-media-wrap" href="${N.productUrl(p)}" aria-label="${N.esc(p.name)}">
-        ${p.badge ? `<span class="p-badge">${N.esc(p.badge)}</span>` : ""}
+        ${p.soldOut ? `<span class="p-badge p-badge-out">Tạm hết</span>` : p.badge ? `<span class="p-badge">${N.esc(p.badge)}</span>` : ""}
         <span class="p-media"><img src="${N.img(p.img)}" alt="${N.esc(p.name)}" loading="lazy"></span>
       </a>
       <div class="feature-body">
@@ -17,15 +19,17 @@
         <ul class="feature-points"><li>Đóng gói 1kg</li><li>Nhận tại quán hoặc giao tận nơi</li><li>Đặt online hoặc qua Zalo</li></ul>
         <p class="feature-price"><small>Giá</small>${N.priceText(p)}</p>
         <div class="feature-actions">
-          <button class="btn btn-lime btn-sm" type="button" data-add="${p.id}">${N.IC.plus} Thêm vào giỏ</button>
+          ${p.soldOut ? `<button class="btn btn-outline btn-sm" type="button" disabled>Tạm hết hàng</button>` : `<button class="btn btn-lime btn-sm" type="button" data-add="${p.id}">${N.IC.plus} Thêm vào giỏ</button>`}
           <a class="btn btn-outline btn-sm" href="${N.productUrl(p)}">Chi tiết</a>
         </div>
       </div>
     </article>`).join("");
-  N.anim(groundGrid.querySelectorAll(".feature-card"), "up");
-  const drinksGrid = document.querySelector('[data-grid="drinks"]');
   drinksGrid.innerHTML = N.PRODUCTS.filter((p) => p.type === "drink" && p.featured).slice(0, 5).map(N.card).join("");
+  };
+  renderProducts();
+  N.anim(groundGrid.querySelectorAll(".feature-card"), "up");
   N.anim(drinksGrid.querySelectorAll(".p-card"), "up");
+  document.addEventListener("nhan:shop", () => { renderProducts(); N.anim(groundGrid.querySelectorAll(".feature-card"), "up"); N.anim(drinksGrid.querySelectorAll(".p-card"), "up"); });
   const postsGrid = document.querySelector('[data-grid="posts"]');
   postsGrid.innerHTML = N.ARTICLES.slice(0, 3).map(N.postCard).join("");
 
