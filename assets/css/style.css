@@ -1973,3 +1973,7 @@ a.gx-note:hover { border-color: var(--lime-dark); box-shadow: 0 10px 24px rgba(5
 .lt-ic { display: block; }
 .dash-main [data-pane="orders"] > .admin-stats { display: none; } /* duplicated by the hero KPIs */
 @media (max-width: 640px) { .sec-row > div { flex: 1 1 170px; } }
+/* admin price inputs: formatted amount + currency suffix */
+.mn-money { position: relative; display: block; }
+.mn-money .input { padding-right: 30px; font-variant-numeric: tabular-nums; letter-spacing: .01em; }
+.mn-money em { position: absolute; right: 12px; top: 50%; transform: translateY(-50%); font-style: normal; font-weight: 800; color: var(--muted); pointer-events: none; }

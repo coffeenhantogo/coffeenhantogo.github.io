@@ -329,6 +329,7 @@
         renderMenu(true); return false;
       }
     };
+    const fmtNum = (n) => new Intl.NumberFormat("vi-VN").format(n);
     const baseOf = (p, k) => (k === "price" ? p._base.price : p._base.priceBy[k]);
     const valOf = (p, k) => (k === "price" ? p.price : p.priceBy[k]);
     function renderMenu(force) {
@@ -354,14 +355,23 @@
               <div class="mn-name"><b>${N.esc(p.name)}</b><small>${N.esc(p.cat)}</small></div>
               <div class="mn-prices">${keys.map((k) => {
                 const v = valOf(p, k), b = baseOf(p, k);
-                return `<label class="mn-price"><span>${k === "price" ? (p.type === "ground" ? "Gói 1kg" : "Ly lớn") : N.esc(k)}</span><input class="input" type="number" inputmode="numeric" min="1000" max="10000000" step="1000" data-k="${N.esc(k)}" value="${v ?? ""}" aria-label="Giá ${N.esc(p.name)} ${N.esc(k === "price" ? "" : k)}"><small class="${v !== b ? "chg" : ""}">${v !== b ? "Đã đổi · " : ""}Gốc ${b != null ? N.fmtVND(b) : "—"}</small></label>`;
+                return `<label class="mn-price"><span>${k === "price" ? (p.type === "ground" ? "Gói 1kg" : "Ly lớn") : N.esc(k)}</span><span class="mn-money"><input class="input" type="text" inputmode="numeric" autocomplete="off" data-k="${N.esc(k)}" value="${v != null ? fmtNum(v) : ""}" aria-label="Giá ${N.esc(p.name)} ${N.esc(k === "price" ? "" : k)}"><em aria-hidden="true">₫</em></span><small class="${v !== b ? "chg" : ""}">${v !== b ? "Đã đổi · " : ""}Gốc ${b != null ? N.fmtVND(b) : "—"}</small></label>`;
               }).join("")}</div>
               <button type="button" class="mn-stock ${p.soldOut ? "out" : ""}" data-stock="${p.id}" aria-pressed="${!p.soldOut}">${p.soldOut ? "Hết hàng" : "Còn hàng"}</button>
             </div>`;
           }).join("")}
         </div>`).join("");
     }
-    root.addEventListener("input", (e) => { if (e.target.closest("[data-k]")) pricesDirty = true; });
+    // price inputs: digits only, shown as 22.000 while typing (caret kept after the same digit)
+    root.addEventListener("input", (e) => {
+      const inp = e.target.closest("[data-k]"); if (!inp) return;
+      pricesDirty = true;
+      const caret = inp.selectionStart ?? inp.value.length, digitsBefore = inp.value.slice(0, caret).replace(/\D/g, "").length;
+      const digits = inp.value.replace(/\D/g, "").replace(/^0+(?=\d)/, "").slice(0, 8);
+      inp.value = digits ? fmtNum(+digits) : "";
+      let pos = 0, seen = 0; while (pos < inp.value.length && seen < digitsBefore) { if (/\d/.test(inp.value[pos])) seen++; pos++; }
+      try { inp.setSelectionRange(pos, pos); } catch { /* not focusable */ }
+    });
     root.addEventListener("click", async (e) => {
       const st = e.target.closest("[data-stock]");
       if (st) {
@@ -379,7 +389,7 @@
           row.querySelectorAll("[data-k]").forEach((inp) => {
             const k = inp.dataset.k, b = baseOf(p, k);
             if (inp.value === "" && b == null) return;
-            const v = Math.round(Number(inp.value));
+            const v = Math.round(Number(inp.value.replace(/\D/g, "")) || NaN);
             const ok = Number.isFinite(v) && v >= 1000 && v <= 10000000;
             inp.classList.toggle("is-bad", !ok);
             if (!ok) { bad = bad || inp; return; }
