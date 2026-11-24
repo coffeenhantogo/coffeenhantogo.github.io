@@ -42,7 +42,17 @@
               <select class="select" name="branch"><option value="">— Chọn chi nhánh —</option>${S.branches.map((b) => { const v = `${b.name} – ${b.address}`; return `<option value="${N.esc(v)}" ${prof.branch === v ? "selected" : ""}>${N.esc(b.name)}</option>`; }).join("")}</select>
             </label>
             <button class="btn btn-lime btn-block" type="submit">Lưu thông tin</button>
-            ${u.providerData.some((p) => p.providerId === "password") ? '<button type="button" class="auth-link" data-reset style="margin-top:12px">Đổi mật khẩu (gửi link qua email)</button>' : ""}
+            ${u.providerData.some((p) => p.providerId === "password")
+              ? '<button type="button" class="auth-link" data-pw-toggle style="margin-top:14px">Đổi mật khẩu</button>'
+              : '<p class="pw-google-note">Bạn đăng nhập bằng Google – mật khẩu do tài khoản Google quản lý.</p>'}
+            <div class="pw-box" data-pw-box hidden>
+              <div class="form-alert" data-pwmsg hidden></div>
+              <label class="field" data-f="cur"><span>Mật khẩu hiện tại</span><input name="cur" type="password" autocomplete="current-password"><span class="err">Vui lòng nhập mật khẩu hiện tại.</span></label>
+              <label class="field" data-f="npw"><span>Mật khẩu mới</span><input name="npw" type="password" autocomplete="new-password" placeholder="Ít nhất 6 ký tự"><span class="err">Mật khẩu mới cần ít nhất 6 ký tự.</span></label>
+              <label class="field" data-f="npw2"><span>Nhập lại mật khẩu mới</span><input name="npw2" type="password" autocomplete="new-password"><span class="err">Mật khẩu nhập lại không khớp.</span></label>
+              <button type="button" class="btn btn-ink btn-block" data-pw-save>Cập nhật mật khẩu</button>
+              <button type="button" class="auth-link" data-pw-forgot style="margin-top:12px">Quên mật khẩu hiện tại?</button>
+            </div>
           </form>
           <div class="co-card acct-orders" data-reveal="right">
             <h2><span class="step">2</span> Đơn hàng của tôi</h2>
@@ -53,7 +63,34 @@
 
       root.querySelector("[data-signout]").addEventListener("click", async () => { await api.signOut(); N.toast("Đã đăng xuất"); location.replace(N.HOME); });
       root.querySelector("[data-verify]")?.addEventListener("click", async (e) => { try { await u.sendEmailVerification(); e.target.textContent = "Đã gửi – kiểm tra hộp thư"; } catch (err) { N.toast(api.errorText(err)); } });
-      root.querySelector("[data-reset]")?.addEventListener("click", async (e) => { const b = e.target; if (b.disabled) return; if (!N.resetCooldown()) { N.toast("Vui lòng chờ 1 phút rồi gửi lại – chỉ link mới nhất có hiệu lực"); return; } b.disabled = true; try { await api.reset(u.email); b.innerHTML = `Đã gửi link tới ${N.esc(u.email)}.<br><small>Mở email <b>mới nhất</b> trong 1 giờ · mỗi link dùng 1 lần</small>`; setTimeout(() => (b.disabled = false), 60000); } catch (err) { b.disabled = false; N.toast(api.errorText(err)); } });
+      /* change password directly (re-authenticate with the current password) */
+      const pwBox = root.querySelector("[data-pw-box]");
+      root.querySelector("[data-pw-toggle]")?.addEventListener("click", () => { pwBox.hidden = !pwBox.hidden; if (!pwBox.hidden) pwBox.querySelector("input").focus(); });
+      const pwMsg = root.querySelector("[data-pwmsg]");
+      const showPw = (type, html) => { pwMsg.className = `form-alert ${type}`; pwMsg.innerHTML = html; pwMsg.hidden = false; };
+      root.querySelector("[data-pw-save]")?.addEventListener("click", async (e) => {
+        const f = root.querySelector("[data-profile]");
+        const cur = f.cur.value, npw = f.npw.value;
+        const set = (k, on) => { f.querySelector(`[data-f="${k}"]`).classList.toggle("has-error", on); return on; };
+        if ([set("cur", !cur), set("npw", npw.length < 6), set("npw2", npw !== f.npw2.value)].some(Boolean)) return;
+        const b = e.currentTarget; b.disabled = true; b.innerHTML = '<span class="spinner"></span> Đang cập nhật…';
+        try {
+          const cred = api.firebase.auth.EmailAuthProvider.credential(u.email, cur);
+          await u.reauthenticateWithCredential(cred);
+          await u.updatePassword(npw);
+          f.cur.value = f.npw.value = f.npw2.value = "";
+          showPw("ok", "Đã đổi mật khẩu thành công. Lần đăng nhập sau dùng mật khẩu mới.");
+        } catch (err) {
+          const c = err && err.code;
+          showPw("err", c === "auth/wrong-password" || c === "auth/invalid-credential" || c === "auth/invalid-login-credentials" ? "Mật khẩu hiện tại không đúng." : api.errorText(err));
+        }
+        b.disabled = false; b.textContent = "Cập nhật mật khẩu";
+      });
+      root.querySelector("[data-pw-forgot]")?.addEventListener("click", async () => {
+        if (!N.resetCooldown()) { showPw("warn", "Bạn vừa yêu cầu link. Vui lòng chờ 1 phút – và chỉ mở <b>email mới nhất</b>."); return; }
+        try { await api.reset(u.email); showPw("ok", `Đã gửi link đặt lại mật khẩu tới <b>${N.esc(u.email)}</b>. Mở <b>email mới nhất</b> trong 1 giờ, mỗi link chỉ dùng 1 lần.`); }
+        catch (err) { showPw("err", api.errorText(err)); }
+      });
 
       const form = root.querySelector("[data-profile]"), pmsg = root.querySelector("[data-pmsg]");
       form.addEventListener("submit", async (e) => {

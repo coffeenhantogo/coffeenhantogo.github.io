@@ -1346,3 +1346,8 @@ img.img-ready { opacity: 1; transition: opacity .7s ease; }
 .action-note { margin-top: 12px; font-size: 13px; color: var(--muted); text-align: center; line-height: 1.5; }
 .auth-link small { font-weight: 600; text-decoration: none; color: var(--muted); }
 
+
+/* account: change password */
+.pw-box { margin-top: 16px; padding-top: 16px; border-top: 1px dashed var(--latte); animation: pageIn .4s var(--ease) both; }
+.pw-google-note { margin-top: 14px; font-size: 13.5px; color: var(--muted); }
+
