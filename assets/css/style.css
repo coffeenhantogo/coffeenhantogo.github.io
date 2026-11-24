@@ -1699,3 +1699,15 @@ a.gx-note:hover { border-color: var(--lime-dark); box-shadow: 0 10px 24px rgba(5
 }
 @media (min-width: 761px) { .gx-desc { min-height: calc(1.55em * 2); } }
 @media (max-width: 760px) { .gx-specs b { white-space: normal; line-height: 1.3; } }
+
+/* ground support strip: clearly clickable items */
+.gx-note > span { min-width: 0; flex: 1; }
+.gx-note-link { cursor: pointer; }
+.gx-note-link:hover { transform: translateY(-2px); }
+.gx-go { flex-shrink: 0; width: 38px; height: 38px; border-radius: 50%; display: grid; place-items: center; font-style: normal; font-weight: 900; background: var(--ink); color: var(--lime); transition: transform .3s var(--ease), background .25s; }
+.gx-note-link:hover .gx-go { transform: translateX(4px); background: var(--lime); color: var(--ink); }
+.gx-note-btns { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+.gx-note-btns a { display: inline-flex; align-items: center; min-height: 40px; padding: 0 14px; border-radius: 999px; font-size: 13px; font-weight: 800; background: var(--lime); color: var(--ink); transition: background .2s, color .2s; }
+.gx-note-btns a + a { background: #0068FF; color: #fff; }
+.gx-note-btns a:hover { background: var(--ink); color: #fff; }
+.gx-note { transition: border-color .25s, box-shadow .3s, transform .3s var(--ease); }

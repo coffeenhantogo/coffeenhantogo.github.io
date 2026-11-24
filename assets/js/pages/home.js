@@ -53,8 +53,9 @@
   groundGrid.insertAdjacentHTML("afterend", `
     <div class="gx-notes">
       <div class="gx-note"><i>${ICO.bag}</i><span><b>Đóng gói 1kg</b><small>Tiện dùng cho gia đình và quán</small></span></div>
-      <a class="gx-note" href="tel:${N.STORE.phone}"><i>${ICO.phone}</i><span><b>Mua số lượng lớn?</b><small>Gọi ${N.STORE.phoneDisplay} để được tư vấn</small></span></a>
-      <a class="gx-note" href="bai-viet-chi-tiet.html?slug=bi-quyet-pha-ca-phe-phin"><i>${ICO.book}</i><span><b>Hướng dẫn pha phin</b><small>Pha ngon tại nhà như ở quán →</small></span></a>
+      <div class="gx-note gx-note-bulk"><i>${ICO.phone}</i><span><b>Mua số lượng lớn?</b><small>Tư vấn giá cho quán, văn phòng</small>
+        <span class="gx-note-btns"><a href="tel:${N.STORE.phone}">Gọi ${N.STORE.phoneDisplay}</a><a href="${N.STORE.zalo}" target="_blank" rel="noopener">Nhắn Zalo</a></span></span></div>
+      <a class="gx-note gx-note-link" href="bai-viet-chi-tiet.html?slug=bi-quyet-pha-ca-phe-phin"><i>${ICO.book}</i><span><b>Hướng dẫn pha phin</b><small>Pha ngon tại nhà như ở quán</small></span><em class="gx-go" aria-hidden="true">→</em></a>
     </div>`);
   N.anim(groundGrid.querySelectorAll(".gx-card"), "up");
   N.anim(document.querySelectorAll(".gx-note"), "up");
