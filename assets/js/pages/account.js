@@ -45,6 +45,7 @@
                 <span data-av-src></span>
                 <div class="av-edit-btns">
                   <button type="button" class="btn btn-ink btn-sm" data-av-pick>Tải ảnh lên</button>
+                  <button type="button" class="btn btn-outline btn-sm" data-av-adjust hidden>Căn chỉnh ảnh</button>
                   <button type="button" class="btn btn-outline btn-sm" data-av-google hidden>Dùng ảnh Google</button>
                   <button type="button" class="btn btn-outline btn-sm btn-g" data-av-link hidden><svg viewBox="0 0 48 48" width="16" height="16" aria-hidden="true"><path fill="#FFC107" d="M43.6 20.5H42V20H24v8h11.3C33.7 32.7 29.2 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.8 1.2 7.9 3l5.7-5.7C34 6.1 29.3 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20 20-8.9 20-20c0-1.3-.1-2.4-.4-3.5z"/><path fill="#FF3D00" d="m6.3 14.7 6.6 4.8C14.7 15.1 19 12 24 12c3.1 0 5.8 1.2 7.9 3l5.7-5.7C34 6.1 29.3 4 24 4 16.3 4 9.7 8.3 6.3 14.7z"/><path fill="#4CAF50" d="M24 44c5.2 0 9.9-2 13.4-5.2l-6.2-5.2C29.2 35.1 26.7 36 24 36c-5.2 0-9.6-3.3-11.3-8l-6.5 5C9.5 39.6 16.2 44 24 44z"/><path fill="#1976D2" d="M43.6 20.5H42V20H24v8h11.3c-.8 2.2-2.2 4.2-4.1 5.6l6.2 5.2C37 39.2 44 34 44 24c0-1.3-.1-2.4-.4-3.5z"/></svg> Lấy ảnh từ Google</button>
                   <button type="button" class="auth-link" data-av-remove hidden>Xóa ảnh</button>
@@ -85,6 +86,7 @@
         const cu = api.user || u, custom = api.photo, google = N.googlePhoto(cu);
         root.querySelectorAll("[data-av]").forEach((el) => { el.innerHTML = initial + N.avatarImg(custom || google); });
         root.querySelector("[data-av-src]").textContent = custom ? "Ảnh bạn đã tải lên." : google ? "Đang dùng ảnh từ tài khoản Google." : "Tải ảnh lên (JPG, PNG, WEBP – tự cắt vuông) hoặc lấy ảnh từ tài khoản Google.";
+        root.querySelector("[data-av-adjust]").hidden = !(custom || google);
         root.querySelector("[data-av-google]").hidden = !(custom && google);
         root.querySelector("[data-av-link]").hidden = !!google;
         root.querySelector("[data-av-remove]").hidden = !custom || !!google;
@@ -114,31 +116,101 @@
         if (x1 < 0 || (x1 - x0 < w * 0.15 && y1 - y0 < h * 0.15)) return { trimmed: false, fill };
         return { trimmed: true, fill, x: x0 / k, y: y0 / k, w: (x1 - x0 + 1) / k, h: (y1 - y0 + 1) / k };
       };
-      const toAvatar = (file) => new Promise((ok, fail) => {
-        if (!file || !/^image\//.test(file.type)) return fail(new Error("Vui lòng chọn một tệp ảnh (JPG, PNG, WEBP)."));
-        if (file.size > 20e6) return fail(new Error("Ảnh quá lớn (tối đa 20MB)."));
-        const url = URL.createObjectURL(file), img = new Image();
-        img.onload = () => {
-          const W = img.naturalWidth, H = img.naturalHeight, S = 256;
-          const box = contentBox(img);
-          // logos / images on a plain background: fit the content box; photos: centre square crop
-          const s = box.trimmed ? Math.max(box.w, box.h) : Math.min(W, H);
-          const cx = box.trimmed ? box.x + box.w / 2 : W / 2, cy = box.trimmed ? box.y + box.h / 2 : H / 2;
-          const c = document.createElement("canvas"); c.width = c.height = S;
-          const g = c.getContext("2d"); g.fillStyle = box.fill; g.fillRect(0, 0, S, S);
-          g.imageSmoothingQuality = "high";
-          g.drawImage(img, cx - s / 2, cy - s / 2, s, s, 0, 0, S, S);
-          URL.revokeObjectURL(url);
-          let q = 0.86, d = c.toDataURL("image/jpeg", q);
-          while (d.length > 90000 && q > 0.45) { q -= 0.12; d = c.toDataURL("image/jpeg", q); }
-          ok(d);
-        };
-        img.onerror = () => { URL.revokeObjectURL(url); fail(new Error("Không đọc được ảnh này. Hãy thử ảnh JPG hoặc PNG.")); };
-        img.src = url;
+      const loadImg = (src, cors) => new Promise((ok, fail) => {
+        const im = new Image();
+        if (cors) im.crossOrigin = "anonymous";
+        im.onload = () => ok(im);
+        im.onerror = () => fail(new Error("Không đọc được ảnh này. Hãy thử ảnh JPG hoặc PNG."));
+        im.src = src;
       });
+      /* crop editor: drag to position, slider / mouse wheel to zoom, round preview → 256px JPEG data URL (or null) */
+      const openCropper = (img) => new Promise((resolve) => {
+        const W = img.naturalWidth, H = img.naturalHeight, box = contentBox(img);
+        const base = Math.min(W, H);                       // visible square side at zoom 1 (fills the circle)
+        let side = box.trimmed ? Math.max(box.w, box.h) : base;
+        let cx = box.trimmed ? box.x + box.w / 2 : W / 2, cy = box.trimmed ? box.y + box.h / 2 : H / 2;
+        const Z_MIN = 0.5, Z_MAX = 6;
+        const wrap = document.createElement("div");
+        wrap.className = "av-crop";
+        wrap.setAttribute("role", "dialog"); wrap.setAttribute("aria-modal", "true"); wrap.setAttribute("aria-label", "Căn chỉnh ảnh đại diện");
+        wrap.innerHTML = `
+          <div class="avc-box">
+            <h3>Căn chỉnh ảnh đại diện</h3>
+            <p>Kéo ảnh để căn giữa · kéo thanh trượt để phóng to, thu nhỏ</p>
+            <div class="avc-stage"><canvas width="560" height="560" tabindex="0" aria-label="Xem trước – dùng phím mũi tên để di chuyển ảnh"></canvas></div>
+            <label class="avc-zoom"><span aria-hidden="true">−</span><input type="range" min="${Z_MIN}" max="${Z_MAX}" step="0.01" aria-label="Phóng to ảnh"><span aria-hidden="true">+</span></label>
+            <div class="avc-actions"><button type="button" class="btn btn-outline" data-avc-cancel>Hủy</button><button type="button" class="btn btn-lime" data-avc-save>Lưu ảnh</button></div>
+          </div>`;
+        document.body.appendChild(wrap);
+        const prevOverflow = document.body.style.overflow; document.body.style.overflow = "hidden";
+        const cv = wrap.querySelector("canvas"), g = cv.getContext("2d"), V = cv.width, range = wrap.querySelector("input");
+        const draw = (ctx, size, overlay) => {
+          ctx.setTransform(1, 0, 0, 1, 0, 0);
+          ctx.fillStyle = box.fill; ctx.fillRect(0, 0, size, size);
+          const k = size / side;
+          ctx.imageSmoothingQuality = "high";
+          ctx.setTransform(k, 0, 0, k, size / 2 - cx * k, size / 2 - cy * k);
+          ctx.drawImage(img, 0, 0);
+          ctx.setTransform(1, 0, 0, 1, 0, 0);
+          if (overlay) {
+            ctx.fillStyle = "rgba(17,17,17,.55)";
+            ctx.beginPath(); ctx.rect(0, 0, size, size); ctx.arc(size / 2, size / 2, size / 2 - 3, 0, Math.PI * 2); ctx.fill("evenodd");
+            ctx.strokeStyle = "#fff"; ctx.lineWidth = 4; ctx.beginPath(); ctx.arc(size / 2, size / 2, size / 2 - 3, 0, Math.PI * 2); ctx.stroke();
+          }
+        };
+        const setZoom = (z) => { z = Math.min(Z_MAX, Math.max(Z_MIN, z)); side = base / z; range.value = z; draw(g, V, true); };
+        range.value = base / side; draw(g, V, true);
+        range.addEventListener("input", () => setZoom(+range.value));
+        // drag (mouse / touch)
+        let drag = null;
+        cv.addEventListener("pointerdown", (e) => { drag = { x: e.clientX, y: e.clientY }; cv.setPointerCapture(e.pointerId); cv.classList.add("dragging"); });
+        cv.addEventListener("pointermove", (e) => {
+          if (!drag) return;
+          const f = (V / cv.clientWidth) * (side / V);
+          cx -= (e.clientX - drag.x) * f; cy -= (e.clientY - drag.y) * f; drag = { x: e.clientX, y: e.clientY };
+          draw(g, V, true);
+        });
+        const endDrag = () => { drag = null; cv.classList.remove("dragging"); };
+        cv.addEventListener("pointerup", endDrag); cv.addEventListener("pointercancel", endDrag);
+        cv.addEventListener("wheel", (e) => { e.preventDefault(); setZoom((base / side) * (e.deltaY < 0 ? 1.08 : 1 / 1.08)); }, { passive: false });
+        cv.addEventListener("keydown", (e) => {
+          const step = side * 0.03, m = { ArrowLeft: [step, 0], ArrowRight: [-step, 0], ArrowUp: [0, step], ArrowDown: [0, -step] }[e.key];
+          if (m) { e.preventDefault(); cx += m[0]; cy += m[1]; draw(g, V, true); }
+        });
+        const close = (val) => { wrap.remove(); document.body.style.overflow = prevOverflow; document.removeEventListener("keydown", onEsc); resolve(val); };
+        const onEsc = (e) => { if (e.key === "Escape") close(null); };
+        document.addEventListener("keydown", onEsc);
+        wrap.addEventListener("click", (e) => { if (e.target === wrap) close(null); });
+        wrap.querySelector("[data-avc-cancel]").addEventListener("click", () => close(null));
+        wrap.querySelector("[data-avc-save]").addEventListener("click", () => {
+          const c = document.createElement("canvas"); c.width = c.height = 256;
+          draw(c.getContext("2d"), 256, false);
+          try {
+            let q = 0.86, d = c.toDataURL("image/jpeg", q);
+            while (d.length > 90000 && q > 0.45) { q -= 0.12; d = c.toDataURL("image/jpeg", q); }
+            close(d);
+          } catch { N.toast("Không chỉnh được ảnh này – hãy dùng nút “Tải ảnh lên”."); close(null); }
+        });
+        cv.focus({ preventScroll: true });
+      });
+      const savePhoto = async (img) => {
+        const d = await openCropper(img);
+        if (!d) return;
+        avBusy(true);
+        try { await api.setPhoto(d); N.toast("Đã cập nhật ảnh đại diện"); }
+        catch (err) { N.toast(err && err.code ? api.errorText(err) : "Không lưu được ảnh."); }
+        avBusy(false);
+      };
       const fileIn = root.querySelector("[data-av-file]");
       root.querySelectorAll("[data-av-pick]").forEach((b) => b.addEventListener("click", () => fileIn.click()));
-      const avBusy = (on) => root.querySelectorAll("[data-av-pick],[data-av-google],[data-av-link],[data-av-remove]").forEach((b) => (b.disabled = on));
+      const avBusy = (on) => root.querySelectorAll("[data-av-pick],[data-av-adjust],[data-av-google],[data-av-link],[data-av-remove]").forEach((b) => (b.disabled = on));
+      // adjust the current photo (uploaded one, or the Google photo when Google allows reading it)
+      root.querySelector("[data-av-adjust]").addEventListener("click", async () => {
+        const cur = api.photo || N.googlePhoto(api.user || u);
+        if (!cur) return;
+        try { await savePhoto(await loadImg(cur.replace(/=s\d+(-c)?$/, "=s512-c"), !cur.startsWith("data:"))); }
+        catch { N.toast("Không mở được ảnh hiện tại – hãy dùng nút “Tải ảnh lên”."); }
+      });
       root.querySelector("[data-av-link]").addEventListener("click", async () => {
         avBusy(true);
         try {
@@ -153,10 +225,12 @@
       fileIn.addEventListener("change", async () => {
         const f = fileIn.files[0]; fileIn.value = "";
         if (!f) return;
-        avBusy(true); N.toast("Đang tải ảnh lên…");
-        try { await api.setPhoto(await toAvatar(f)); N.toast("Đã cập nhật ảnh đại diện"); }
-        catch (err) { N.toast(err && err.code ? api.errorText(err) : (err && err.message) || "Không tải được ảnh."); }
-        avBusy(false);
+        if (!/^image\//.test(f.type)) { N.toast("Vui lòng chọn một tệp ảnh (JPG, PNG, WEBP)."); return; }
+        if (f.size > 20e6) { N.toast("Ảnh quá lớn (tối đa 20MB)."); return; }
+        const url = URL.createObjectURL(f);
+        try { await savePhoto(await loadImg(url, false)); }
+        catch (err) { N.toast((err && err.message) || "Không đọc được ảnh."); }
+        URL.revokeObjectURL(url);
       });
       const clearPhoto = async (msg) => { avBusy(true); try { await api.setPhoto(null); N.toast(msg); } catch (err) { N.toast(api.errorText(err)); } avBusy(false); };
       root.querySelector("[data-av-google]").addEventListener("click", () => clearPhoto("Đã chuyển về ảnh Google"));

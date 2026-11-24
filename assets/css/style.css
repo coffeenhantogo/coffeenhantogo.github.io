@@ -1718,3 +1718,17 @@ a.gx-note:hover { border-color: var(--lime-dark); box-shadow: 0 10px 24px rgba(5
 .prose .article-shot figcaption { margin-top: 10px; font-size: 13.5px; color: var(--muted); line-height: 1.45; }
 /* ground showcase image: no 3D tilt (it exposed the card edges) – only the slow zoom inside the frame */
 .gx-media, .gx-card .p-media-wrap { transform: none !important; }
+
+/* avatar crop editor */
+.av-crop { position: fixed; inset: 0; z-index: 120; display: grid; place-items: center; padding: 16px; background: rgba(17,17,17,.6); animation: fade .2s; }
+.avc-box { width: min(400px, 100%); max-height: calc(100vh - 32px); overflow-y: auto; padding: 22px; border-radius: 22px; background: #fff; box-shadow: var(--shadow); text-align: center; }
+.avc-box h3 { font-family: var(--font-display); font-size: 20px; font-weight: 800; color: var(--brown); }
+.avc-box p { margin-top: 4px; font-size: 13.5px; color: var(--muted); }
+.avc-stage { margin: 16px auto 0; width: min(280px, 100%); aspect-ratio: 1; border-radius: 18px; overflow: hidden; background: var(--crema); }
+.avc-stage canvas { display: block; width: 100%; height: 100%; cursor: grab; touch-action: none; }
+.avc-stage canvas.dragging { cursor: grabbing; }
+.avc-stage canvas:focus-visible { outline: 3px solid var(--lime-dark); outline-offset: -3px; }
+.avc-zoom { display: flex; align-items: center; gap: 12px; margin: 16px auto 0; width: min(280px, 100%); font-size: 20px; font-weight: 900; color: var(--brown); }
+.avc-zoom input { flex: 1; accent-color: var(--lime-deep); height: 40px; }
+.avc-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 16px; }
+.avc-actions .btn { height: 48px; }
