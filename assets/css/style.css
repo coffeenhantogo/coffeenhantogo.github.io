@@ -1372,3 +1372,7 @@ img.img-ready { opacity: 1; transition: opacity .7s ease; }
 .ct-row.is-banned { background: #fffafa; }
 .ct-row.is-banned .ct-av { background: #b02a2a; color: #fff; }
 @media (max-width: 900px) { .ct-actions { grid-column: 1 / -1; } }
+
+.fchip-del { margin-left: 8px; color: var(--muted); border-style: dashed; }
+.fchip-del.is-active { background: #fdecec; border-color: #d64545; color: #b02a2a; border-style: solid; }
+

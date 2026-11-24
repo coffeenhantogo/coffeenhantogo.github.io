@@ -28,7 +28,7 @@
       return;
     }
 
-    let orders = [], users = [], filter = "active", q = "", cq = "", csort = "new", firstLoad = true, view = location.hash === "#khach-hang" ? "customers" : "orders", autoAll = true;
+    let showDeleted = false; let orders = [], users = [], filter = "active", q = "", cq = "", csort = "new", firstLoad = true, view = location.hash === "#khach-hang" ? "customers" : "orders", autoAll = true;
     root.innerHTML = `
       <div class="admin-head" data-reveal="up">
         <div><span class="kicker">Quản trị</span><h1>Bảng điều khiển</h1><p>Cập nhật theo thời gian thực · ${N.esc(u.email)}</p></div>
@@ -53,6 +53,7 @@
             <button class="fchip" data-s="new">Mới đăng ký</button>
             <button class="fchip" data-s="login">Đăng nhập gần đây</button>
             <button class="fchip" data-s="spend">Chi tiêu nhiều</button>
+            <button class="fchip fchip-del" data-showdel hidden></button>
           </div>
           <div class="toolbar-right"><label class="search-inline"><svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><circle cx="11" cy="11" r="6.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="m16 16 4 4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg><input class="input" type="search" placeholder="Tìm tên, email, SĐT…" data-cq></label></div>
         </div>
@@ -145,7 +146,12 @@
       ].map(([k, v]) => `<div class="stat"><span>${k}</span><b>${v}</b></div>`).join("");
       root.querySelectorAll("[data-s]").forEach((b) => b.classList.toggle("is-active", b.dataset.s === csort));
       const nq = N.norm(cq);
-      let list = rows.filter((r) => !nq || N.norm(`${r.name || ""} ${r.email || ""} ${r.phone || ""}`).includes(nq));
+      const nDel = rows.length - live.length;
+      const tg = $("[data-showdel]");
+      tg.hidden = nDel === 0;
+      tg.classList.toggle("is-active", showDeleted);
+      tg.innerHTML = `${showDeleted ? "Ẩn đã xóa" : "Đã xóa"}<small>${nDel}</small>`;
+      let list = rows.filter((r) => (showDeleted || !r.deleted) && (!nq || N.norm(`${r.name || ""} ${r.email || ""} ${r.phone || ""}`).includes(nq)));
       const t = (d) => (d ? d.getTime() : 0);
       const byDeleted = (a, b) => (a.deleted ? 1 : 0) - (b.deleted ? 1 : 0);
       if (csort === "login") list.sort((a, b) => t(b.login) - t(a.login));
@@ -176,6 +182,7 @@
         </div>` : `<div class="empty-state"><b>Chưa có khách hàng</b>Khách đăng ký sẽ tự hiện ở đây.</div>`;
     }
     root.addEventListener("click", (e) => { const b = e.target.closest("[data-s]"); if (b) { csort = b.dataset.s; renderUsers(); } });
+    root.addEventListener("click", (e) => { if (e.target.closest("[data-showdel]")) { showDeleted = !showDeleted; renderUsers(); } });
 
     /* lock / unlock / delete customers */
     const FV = api.firebase.firestore.FieldValue;
