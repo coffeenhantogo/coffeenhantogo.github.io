@@ -17,15 +17,16 @@ service cloud.firestore {
       allow read, write: if (signedIn() && request.auth.uid == uid) || isAdmin();
     }
 
-    // Orders: anyone may place an order (guests too, uid = null);
+    // Orders: only signed-in customers can place an order (uid must be their own);
     // members can read their own orders; only the admin can list all and change status.
     match /orders/{code} {
-      allow create: if request.resource.data.keys().hasAll(['code', 'customer', 'items', 'delivery', 'payment'])
+      allow create: if signedIn()
+        && request.resource.data.uid == request.auth.uid
+        && request.resource.data.keys().hasAll(['code', 'customer', 'items', 'delivery', 'payment'])
         && request.resource.data.code == code
         && request.resource.data.status == 'pending'
         && request.resource.data.items is list
-        && request.resource.data.items.size() > 0 && request.resource.data.items.size() <= 50
-        && (request.resource.data.uid == null || (signedIn() && request.resource.data.uid == request.auth.uid));
+        && request.resource.data.items.size() > 0 && request.resource.data.items.size() <= 50;
       allow read: if isAdmin() || (signedIn() && resource.data.uid == request.auth.uid);
       allow update, delete: if isAdmin();
     }

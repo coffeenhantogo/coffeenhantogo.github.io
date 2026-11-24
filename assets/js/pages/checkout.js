@@ -1,5 +1,5 @@
 /* Checkout: validate → email order via FormSubmit → save locally → success page */
-(() => {
+(async () => {
   const N = window.NHAN, S = N.STORE;
   const root = document.querySelector("[data-checkout]");
   const PROFILE_KEY = "nhan-customer-v1";
@@ -8,6 +8,31 @@
 
   function renderEmpty() { root.innerHTML = `<div class="co-card">${N.emptyCartHTML}</div>`; }
   if (!N.cart.items().length) { renderEmpty(); return; }
+
+  /* ---- accounts required: only signed-in customers can place orders ---- */
+  root.innerHTML = `<div class="acct-loading"><span class="spinner"></span> Đang kiểm tra tài khoản…</div>`;
+  const ACCT = await N.fbReady;
+  if (!ACCT) {
+    root.innerHTML = `<div class="co-card login-gate"><h2>Không kết nối được hệ thống tài khoản</h2><p>Vui lòng kiểm tra mạng rồi tải lại trang, hoặc đặt nhanh qua Zalo / điện thoại.</p><div class="success-actions"><button class="btn btn-lime" type="button" onclick="location.reload()">Tải lại trang</button><a class="btn btn-outline" href="${S.zalo}" target="_blank" rel="noopener">Zalo ${S.phoneDisplay}</a></div></div>`;
+    return;
+  }
+  if (!ACCT.user) {
+    const n = N.cart.count();
+    root.innerHTML = `
+      <div class="co-card login-gate" data-reveal="zoom">
+        <div class="cart-empty-ic">${N.IC.user.replace('width="20" height="20"', 'width="34" height="34"')}</div>
+        <h2>Đăng nhập để đặt hàng</h2>
+        <p>Giỏ hàng của bạn (<b>${n} món – ${N.esc(N.cart.total().text)}</b>) đã được giữ lại. Chỉ mất vài giây để tạo tài khoản – lần sau thông tin giao hàng sẽ được điền sẵn và bạn theo dõi được trạng thái đơn.</p>
+        <div class="success-actions">
+          <a class="btn btn-lime" href="dang-nhap.html?next=thanh-toan.html">Đăng nhập</a>
+          <a class="btn btn-ink" href="dang-nhap.html?tab=register&next=thanh-toan.html">Tạo tài khoản mới</a>
+        </div>
+        <p class="gate-note">Hoặc dùng nút <b>“Tiếp tục với Google”</b> trên trang đăng nhập – không cần điền form.</p>
+      </div>`;
+    N.anim(root.querySelectorAll("[data-reveal]"), "zoom", { stagger: false });
+    document.addEventListener("nhan:user", (e) => { if (e.detail) location.reload(); });
+    return;
+  }
 
   const prof = N.store.get(PROFILE_KEY, {});
   const today = new Date();
@@ -193,6 +218,12 @@
       const api = await N.fbReady;
       if (api) await Promise.race([api.saveOrder(order), new Promise((_, rej) => setTimeout(() => rej(new Error("timeout")), 6000))]);
       order.synced = !!api;
+      // remember phone / address on the customer's profile for next time
+      if (api && api.user) {
+        const pf = { phone: order.customer.phone };
+        if (order.delivery.method === "ship") pf.address = order.delivery.address; else pf.branch = order.delivery.branch;
+        api.saveProfile(pf).catch(() => {});
+      }
     } catch (err) { order.synced = false; console.warn("order sync failed", err); }
     N.orders.save(order);
     N.cart.clear();

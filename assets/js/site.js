@@ -194,7 +194,7 @@
     <div class="cart-body" data-cart-body></div>
     <div class="cart-foot" data-cart-foot>
       <div class="cart-total"><span>Tạm tính</span><b data-cart-total>0 ₫</b></div>
-      <p class="cart-note">Phí giao hàng (nếu có) được nhân viên báo khi xác nhận đơn.</p>
+      <p class="cart-note">Cần đăng nhập để đặt hàng. Phí giao hàng (nếu có) được nhân viên báo khi xác nhận đơn.</p>
       <a class="btn btn-lime btn-block" href="thanh-toan.html">Tiến hành đặt hàng</a>
       <a class="btn btn-outline btn-block" href="gio-hang.html">Xem giỏ hàng</a>
     </div>
@@ -579,7 +579,7 @@
     });
   };
   N.requireConfig = (root) => {
-    root.innerHTML = `<div class="co-card" style="max-width:620px;margin:0 auto;text-align:center"><div class="cart-empty-ic">${IC.user.replace('width="20" height="20"', 'width="34" height="34"')}</div><h2 style="font-size:22px;color:var(--brown);font-weight:800">Tính năng tài khoản đang được thiết lập</h2><p style="color:var(--muted);margin:8px 0 18px">Bạn vẫn có thể đặt hàng bình thường mà không cần tài khoản.</p><a class="btn btn-lime" href="thuc-don.html">Đặt món ngay</a></div>`;
+    root.innerHTML = `<div class="co-card" style="max-width:620px;margin:0 auto;text-align:center"><div class="cart-empty-ic">${IC.user.replace('width="20" height="20"', 'width="34" height="34"')}</div><h2 style="font-size:22px;color:var(--brown);font-weight:800">Tính năng tài khoản đang được thiết lập</h2><p style="color:var(--muted);margin:8px 0 18px">Vui lòng thử lại sau ít phút, hoặc đặt nhanh qua Zalo / điện thoại.</p><a class="btn btn-lime" href="thuc-don.html">Đặt món ngay</a></div>`;
   };
 
   /* ---------- motion polish ---------- */

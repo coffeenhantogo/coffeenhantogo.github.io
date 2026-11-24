@@ -1298,3 +1298,10 @@ img.img-ready { opacity: 1; transition: opacity .7s ease; }
   .js-anim [data-anim] { opacity: 1 !important; transform: none !important; filter: none !important; clip-path: none !important; }
   .scroll-progress { display: none; }
 }
+
+/* checkout login gate */
+.login-gate { max-width: 620px; margin: 0 auto; text-align: center; padding: 40px 28px; }
+.login-gate h2 { font-family: var(--font-display); font-size: 26px; font-weight: 800; color: var(--brown); }
+.login-gate p { color: #6d5446; margin-top: 10px; line-height: 1.6; }
+.login-gate .gate-note { font-size: 13.5px; color: var(--muted); margin-top: 18px; }
+
