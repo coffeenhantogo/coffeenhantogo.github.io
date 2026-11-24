@@ -52,6 +52,9 @@ NHAN.FIREBASE = {
   messagingSenderId: "652189805201",
   appId: "1:652189805201:web:899d9788406cb3d823ed30",
 };
+/* Firebase App Check – reCAPTCHA v3 SITE key (public, safe to publish; the SECRET key goes only into
+   Firebase console → App Check). TODO: paste the site key from google.com/recaptcha/admin; null = off. */
+NHAN.APPCHECK_SITE_KEY = null;
 /* Emails allowed to open quan-tri.html (must also be listed in firestore.rules). */
 NHAN.ADMIN_EMAILS = ["coffeenhan178@gmail.com"];
 

@@ -18,6 +18,7 @@
     "firebase-app-compat.js": "sha384-AQ3POAMqIhwS81FrUH95ekxqBZHeP5tG2JfEL3+7GuTtfRLWnrRh32UxwzM+//A9",
     "firebase-auth-compat.js": "sha384-TnlRYaR4JYz/lpaGuaiU61PjNberSA4vjLjtF+oRC/IkohkJqnWxw5EmDSOt1vA1",
     "firebase-firestore-compat.js": "sha384-qn4Jh88HhJA8dplNQyGjOh9OGI4izVhrfj/qIFgaKcdgOE06pXqIKGlsCILZcLAC",
+    "firebase-app-check-compat.js": "sha384-E3vxFxXu8FhW5kvqdQJ5Yf8ugrV7iCJP8jgnItRH2Rk8Q08cJzJGTi/oMC3FEp3j",
   };
   const load = (src) => new Promise((ok, fail) => {
     const s = document.createElement("script");
@@ -54,9 +55,19 @@
   (async () => {
     try {
       await load(`${base}/firebase-app-compat.js`);
-      await Promise.all([load(`${base}/firebase-auth-compat.js`), load(`${base}/firebase-firestore-compat.js`)]);
+      // App Check (reCAPTCHA v3): Firebase only answers requests coming from this website.
+      // Only on the real site (http/https) – a key is bound to the registered domains.
+      const appCheckKey = /^https?:$/.test(location.protocol) && N.APPCHECK_SITE_KEY;
+      await Promise.all([
+        load(`${base}/firebase-auth-compat.js`), load(`${base}/firebase-firestore-compat.js`),
+        appCheckKey ? load(`${base}/firebase-app-check-compat.js`) : null,
+      ]);
       const fb = window.firebase;
       fb.initializeApp(N.FIREBASE);
+      if (appCheckKey && fb.appCheck) {
+        try { fb.appCheck().activate(new fb.appCheck.ReCaptchaV3Provider(appCheckKey), true); }
+        catch (e) { console.warn("[Nhẫn] App Check not active:", e); }
+      }
       const auth = fb.auth(), db = fb.firestore();
       auth.languageCode = "vi";
       const ts = () => fb.firestore.FieldValue.serverTimestamp();

@@ -262,7 +262,7 @@
         </div>
       </div>
       <div class="container f-bottom">
-        <span>© ${new Date().getFullYear()} COFFEE NHẪN TO GO · Drink to be happy.</span>
+        <span>© ${new Date().getFullYear()} COFFEE NHẪN TO GO · Drink to be happy.${N.APPCHECK_SITE_KEY ? ` <small class="rc-note">Trang được bảo vệ bởi reCAPTCHA – áp dụng <a href="https://policies.google.com/privacy" target="_blank" rel="noopener">Chính sách quyền riêng tư</a> và <a href="https://policies.google.com/terms" target="_blank" rel="noopener">Điều khoản</a> của Google.</small>` : ""}</span>
         <span><a href="chinh-sach.html">Chính sách</a> · <a href="credits.html">Nguồn ảnh</a> · <a href="#top" data-top>Lên đầu trang ↑</a></span>
       </div>
     </div>
