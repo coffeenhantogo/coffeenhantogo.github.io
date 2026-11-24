@@ -35,6 +35,7 @@
     "auth/operation-not-allowed": "Phương thức đăng nhập này chưa được bật trong Firebase.",
     "auth/requires-recent-login": "Vui lòng đăng nhập lại để thực hiện thao tác này.",
     "permission-denied": "Bạn không có quyền thực hiện thao tác này.",
+    "nhan/not-registered": "Gmail này chưa đăng ký tài khoản tại Nhẫn. Hãy chuyển sang tab <b>Đăng ký</b> để tạo tài khoản.",
   };
 
   (async () => {
@@ -59,15 +60,39 @@
           try { await cred.user.sendEmailVerification({ url: (N.SITE_URL || location.origin + "/") + "dang-nhap.html" }); } catch { /* not fatal */ }
           return cred.user;
         },
-        async google() {
+        /* mode "login": only existing customers – a Gmail that never registered is rejected (the
+           auto-created Firebase user is deleted again). mode "register": creates the account; the
+           caller then asks the customer to complete registration (phone + policy). */
+        async google(mode = "login") {
           const p = new fb.auth.GoogleAuthProvider();
           p.setCustomParameters({ prompt: "select_account" });
-          const cred = await auth.signInWithPopup(p);
-          const u = cred.user;
-          const ref = db.collection("users").doc(u.uid);
-          const snap = await ref.get();
-          if (!snap.exists) await ref.set({ name: u.displayName || "", email: u.email || "", phone: "", createdAt: ts() }, { merge: true });
-          return u;
+          api._googlePending = true;
+          try {
+            const cred = await auth.signInWithPopup(p);
+            const u = cred.user;
+            const isNew = !!(cred.additionalUserInfo && cred.additionalUserInfo.isNewUser);
+            const ref = db.collection("users").doc(u.uid);
+            if (mode === "login") {
+              const snap = isNew ? null : await ref.get().catch(() => null);
+              if (isNew || !snap || !snap.exists) {
+                if (isNew) { try { await u.delete(); } catch { /* fall back to sign-out */ } }
+                await auth.signOut();
+                const e = new Error("not-registered"); e.code = "nhan/not-registered"; throw e;
+              }
+              return { user: u, isNew: false, needsProfile: !snap.data().phone };
+            }
+            const snap = await ref.get();
+            if (!snap.exists) await ref.set({ name: u.displayName || "", email: u.email || "", phone: "", provider: "google.com", createdAt: ts() }, { merge: true });
+            return { user: u, isNew: isNew || !snap.exists, needsProfile: !snap.exists || !snap.data().phone };
+          } finally {
+            api._googlePending = false;
+            if (auth.currentUser) touch(auth.currentUser);
+          }
+        },
+        async completeProfile({ name, phone }) {
+          if (!api.user) throw new Error("not signed in");
+          if (name && name !== api.user.displayName) await api.user.updateProfile({ displayName: name });
+          await db.collection("users").doc(api.user.uid).set({ name, phone, registeredAt: ts() }, { merge: true });
         },
         reset: (email) => auth.sendPasswordResetEmail(email.trim()),
         signOut: () => auth.signOut(),
@@ -117,7 +142,7 @@
 
       let first = true;
       auth.onAuthStateChanged((u) => {
-        if (u) touch(u);
+        if (u && !api._googlePending) touch(u); // Google sign-ins are recorded only once accepted
         api.user = u;
         N.updateAccountUI && N.updateAccountUI(u, api);
         document.dispatchEvent(new CustomEvent("nhan:user", { detail: u }));

@@ -18,6 +18,8 @@
     tabs.querySelectorAll("[data-tab]").forEach((t) => { const on = t.dataset.tab === name; t.classList.toggle("is-active", on); t.setAttribute("aria-selected", on); });
     tabs.dataset.active = name;
     root.querySelector("[data-google]").hidden = name === "reset";
+    const gl = root.querySelector("[data-google-label]");
+    if (gl) gl.textContent = name === "register" ? "Đăng ký với Google" : "Đăng nhập với Google";
     root.querySelector(".auth-or").hidden = name === "reset";
     const f = forms[name].querySelector("input"); f && setTimeout(() => f.focus(), 50);
   }
@@ -101,9 +103,53 @@
       N.toast("Đăng nhập thành công!"); setTimeout(() => location.replace(next), 500);
     };
 
+    /* Google needs a registration: completion step (phone + policy) for new Google accounts */
+    function showComplete(u) {
+      root.innerHTML = `
+        <div class="verify-box">
+          <div class="verify-ic">${N.IC.user.replace('width="20" height="20"', 'width="36" height="36"')}</div>
+          <h2>Hoàn tất đăng ký</h2>
+          <p>Chỉ còn một bước nữa để tạo tài khoản<br><b>${N.esc(u.email || "")}</b></p>
+          <form class="auth-form" data-complete novalidate style="text-align:left;margin-top:18px">
+            <div class="form-alert" data-cmsg hidden></div>
+            <label class="field" data-f="name"><span>Họ và tên <em>*</em></span><input name="name" maxlength="60" value="${N.esc(u.displayName || "")}"><span class="err">Vui lòng nhập họ tên.</span></label>
+            <label class="field" data-f="phone"><span>Số điện thoại <em>*</em></span><input name="phone" type="tel" inputmode="tel" maxlength="15" placeholder="09xx xxx xxx"><span class="err">Số điện thoại chưa đúng.</span><span class="hint">Để Nhẫn gọi xác nhận đơn hàng.</span></label>
+            <label class="check" data-f="agree"><input type="checkbox" name="agree"><span>Tôi đồng ý với <a href="chinh-sach.html" target="_blank">chính sách & bảo mật</a> của Nhẫn.</span></label>
+            <button class="btn btn-lime btn-block" type="submit" style="margin-top:16px">Hoàn tất đăng ký</button>
+          </form>
+          <p class="auth-foot"><button type="button" class="auth-link" data-cancel>Hủy & dùng cách khác</button></p>
+        </div>`;
+      const f = root.querySelector("[data-complete]"), m = root.querySelector("[data-cmsg]");
+      f.addEventListener("submit", async (e) => {
+        e.preventDefault();
+        const name = f.name.value.trim(), phone = f.phone.value.replace(/[\s.-]/g, "");
+        const bad = [setErr(f, "name", name.length < 2), setErr(f, "phone", !PHONE_RE.test(phone))];
+        f.querySelector('[data-f="agree"]').style.color = f.agree.checked ? "" : "#c0392b";
+        if (bad.some(Boolean) || !f.agree.checked) return;
+        busy(f, true, "Đang lưu…");
+        try {
+          await api.completeProfile({ name, phone });
+          N.store.set("nhan-customer-v1", { ...N.store.get("nhan-customer-v1", {}), name, phone, email: u.email });
+          N.toast("Đăng ký thành công!"); setTimeout(() => location.replace(next), 500);
+        } catch (err) { m.className = "form-alert err"; m.textContent = api.errorText(err); m.hidden = false; busy(f, false); }
+      });
+      root.querySelector("[data-cancel]").addEventListener("click", async () => {
+        try { await api.db.collection("users").doc(api.user.uid).delete(); } catch { /* ignore */ }
+        try { await api.user.delete(); } catch { await api.signOut(); }
+        location.replace("dang-nhap.html?tab=register");
+      });
+    }
+
     root.querySelector("[data-google]").addEventListener("click", async () => {
       hideMsg();
-      try { await api.google(); done(); } catch (e) { show("err", api.errorText(e)); }
+      const mode = tabs.dataset.active === "register" ? "register" : "login";
+      try {
+        const r = await api.google(mode);
+        if (r.needsProfile) showComplete(r.user); else done();
+      } catch (e) {
+        show("err", api.errorText(e));
+        if (e && e.code === "nhan/not-registered") setTimeout(() => { view("register"); show("warn", "Gmail này chưa có tài khoản. Bấm <b>“Đăng ký với Google”</b> hoặc điền form bên dưới để tạo tài khoản."); }, 1800);
+      }
     });
 
     forms.login.addEventListener("submit", async (e) => {
