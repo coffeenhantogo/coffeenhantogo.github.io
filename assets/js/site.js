@@ -466,7 +466,7 @@
     const a = e.target.closest("[data-add]");
     if (a) {
       e.preventDefault();
-      const src = a.closest(".p-card, .feature-card, li")?.querySelector(".p-media img, .c-thumb img");
+      const src = a.closest(".p-card, .feature-card, .gx-card, li")?.querySelector(".p-media img, .c-thumb img");
       N.pick(a.dataset.add, src);
     }
   });

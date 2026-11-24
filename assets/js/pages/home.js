@@ -5,31 +5,61 @@
   /* product grids */
   const groundGrid = document.querySelector('[data-grid="ground"]');
   const drinksGrid = document.querySelector('[data-grid="drinks"]');
-  const renderProducts = () => {
-  groundGrid.innerHTML = N.PRODUCTS.filter((p) => p.type === "ground").map((p) => `
-    <article class="feature-card${p.soldOut ? " is-soldout" : ""}">
-      <a class="feature-media p-media-wrap" href="${N.productUrl(p)}" aria-label="${N.esc(p.name)}">
-        ${p.soldOut ? `<span class="p-badge p-badge-out">Tạm hết</span>` : p.badge ? `<span class="p-badge">${N.esc(p.badge)}</span>` : ""}
+  const ICO = {
+    bag: '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 7h12l1 13H5z"/><path d="M9 7V5a3 3 0 0 1 6 0v2"/></svg>',
+    phone: '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 4h4l2 5-2.5 1.5a11 11 0 0 0 5 5L15 13l5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2"/></svg>',
+    book: '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 5a2 2 0 0 1 2-2h13v16H6a2 2 0 0 0-2 2z"/><path d="M4 21V5M8 7h7M8 11h5"/></svg>',
+  };
+  // "Cà phê xay Đặc biệt – 1kg" → tier "Đặc biệt", title "Cà phê xay Đặc biệt"
+  const tierOf = (p) => p.name.replace(/^Cà phê xay\s*/i, "").replace(/\s*–\s*1kg$/i, "");
+  const titleOf = (p) => p.name.replace(/\s*–\s*1kg$/i, "");
+  const groundCard = (p) => `
+    <article class="gx-card${p.badge ? " is-special" : ""}${p.soldOut ? " is-soldout" : ""}">
+      <a class="gx-media p-media-wrap" href="${N.productUrl(p)}" aria-label="Xem chi tiết ${N.esc(titleOf(p))}">
         <span class="p-media"><img src="${N.img(p.img)}" alt="${N.esc(p.name)}" loading="lazy"></span>
+        ${p.soldOut ? `<span class="gx-ribbon is-out">Tạm hết</span>` : p.badge ? `<span class="gx-ribbon">Dòng ${N.esc(p.badge)}</span>` : ""}
+        <span class="gx-stamp" aria-hidden="true"><b>1</b>kg</span>
+        <span class="gx-tier"><small>Cà phê xay</small>${N.esc(tierOf(p))}</span>
       </a>
-      <div class="feature-body">
-        <p class="p-cat">${N.esc(p.cat)}</p>
-        <h3><a href="${N.productUrl(p)}">${N.esc(p.name)}</a></h3>
-        <p class="feature-short">${N.esc(p.short)}</p>
-        <ul class="feature-points"><li>Đóng gói 1kg</li><li>Nhận tại quán hoặc giao tận nơi</li><li>Đặt online hoặc qua Zalo</li></ul>
-        <p class="feature-price"><small>Giá</small>${N.priceText(p)}</p>
-        <div class="feature-actions">
-          ${p.soldOut ? `<button class="btn btn-outline btn-sm" type="button" disabled>Tạm hết hàng</button>` : `<button class="btn btn-lime btn-sm" type="button" data-add="${p.id}">${N.IC.plus} Thêm vào giỏ</button>`}
-          <a class="btn btn-outline btn-sm" href="${N.productUrl(p)}">Chi tiết</a>
+      <div class="gx-body">
+        <h3><a href="${N.productUrl(p)}">${N.esc(titleOf(p))}</a></h3>
+        <p class="gx-desc">${N.esc(p.desc || p.short)}</p>
+        <ul class="gx-specs">
+          <li><small>Khối lượng</small><b>1kg / gói</b></li>
+          <li><small>Dạng</small><b>Xay sẵn</b></li>
+          <li><small>Nhận hàng</small><b>Tại quán · Giao</b></li>
+        </ul>
+        <div class="gx-buy">
+          <div class="gx-price">
+            <small>Giá gói 1kg</small>
+            <b>${p.price != null ? N.fmtVND(p.price) : "Liên hệ"}</b>
+            ${p.price != null ? `<em>≈ ${N.fmtVND(Math.round(p.price / 10))} / 100g</em>` : ""}
+          </div>
+          <div class="gx-actions">
+            ${p.soldOut
+              ? `<button class="btn btn-outline" type="button" disabled>Tạm hết hàng</button>`
+              : `<button class="btn btn-lime" type="button" data-add="${p.id}">${N.IC.plus} Thêm vào giỏ</button>`}
+            <a class="gx-link" href="${N.productUrl(p)}">Chi tiết <span aria-hidden="true">→</span></a>
+          </div>
         </div>
       </div>
-    </article>`).join("");
-  drinksGrid.innerHTML = N.PRODUCTS.filter((p) => p.type === "drink" && p.featured).slice(0, 5).map(N.card).join("");
+    </article>`;
+  const renderProducts = () => {
+    groundGrid.innerHTML = N.PRODUCTS.filter((p) => p.type === "ground").map(groundCard).join("");
+    drinksGrid.innerHTML = N.PRODUCTS.filter((p) => p.type === "drink" && p.featured).slice(0, 5).map(N.card).join("");
   };
   renderProducts();
-  N.anim(groundGrid.querySelectorAll(".feature-card"), "up");
+  // support strip under the ground-coffee cards
+  groundGrid.insertAdjacentHTML("afterend", `
+    <div class="gx-notes">
+      <div class="gx-note"><i>${ICO.bag}</i><span><b>Đóng gói 1kg</b><small>Tiện dùng cho gia đình và quán</small></span></div>
+      <a class="gx-note" href="tel:${N.STORE.phone}"><i>${ICO.phone}</i><span><b>Mua số lượng lớn?</b><small>Gọi ${N.STORE.phoneDisplay} để được tư vấn</small></span></a>
+      <a class="gx-note" href="bai-viet-chi-tiet.html?slug=bi-quyet-pha-ca-phe-phin"><i>${ICO.book}</i><span><b>Hướng dẫn pha phin</b><small>Pha ngon tại nhà như ở quán →</small></span></a>
+    </div>`);
+  N.anim(groundGrid.querySelectorAll(".gx-card"), "up");
+  N.anim(document.querySelectorAll(".gx-note"), "up");
   N.anim(drinksGrid.querySelectorAll(".p-card"), "up");
-  document.addEventListener("nhan:shop", () => { renderProducts(); N.anim(groundGrid.querySelectorAll(".feature-card"), "up"); N.anim(drinksGrid.querySelectorAll(".p-card"), "up"); });
+  document.addEventListener("nhan:shop", () => { renderProducts(); N.anim(groundGrid.querySelectorAll(".gx-card"), "up"); N.anim(drinksGrid.querySelectorAll(".p-card"), "up"); });
   const postsGrid = document.querySelector('[data-grid="posts"]');
   postsGrid.innerHTML = N.ARTICLES.slice().sort((a, b) => b.date.localeCompare(a.date)).slice(0, 3).map(N.postCard).join("");
 

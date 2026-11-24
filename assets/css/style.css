@@ -1633,3 +1633,69 @@ img.img-ready { opacity: 1; transition: opacity .7s ease; }
   .opt-submit svg { display: none; }
   .opt-submit b { font-size: 13px; padding: 5px 10px; }
 }
+
+/* ===================== Home: ground coffee showcase (v2) ===================== */
+.gx-card { position: relative; display: flex; flex-direction: column; min-width: 0; background: #fff; border: 1px solid var(--latte); border-radius: 26px; overflow: hidden; box-shadow: 0 14px 40px rgba(59,32,18,.08); transition: box-shadow .45s var(--ease), border-color .3s; }
+.gx-card:hover { box-shadow: 0 28px 60px rgba(59,32,18,.16); border-color: var(--lime-dark); }
+.gx-card.is-special { border: 2px solid var(--lime); }
+.gx-media { position: relative; display: block; aspect-ratio: 16 / 10; overflow: hidden; border-radius: 0; background: var(--espresso); }
+.gx-media .p-media { position: absolute; inset: 0; aspect-ratio: auto; height: 100%; }
+.gx-media img { width: 100%; height: 100%; object-fit: cover; transition: transform 1.1s var(--ease); }
+.gx-card:hover .gx-media img { transform: scale(1.06); }
+.gx-media::after { content: ""; position: absolute; inset: 0; z-index: 1; pointer-events: none; background: linear-gradient(0deg, rgba(24,14,8,.78) 0%, rgba(24,14,8,.25) 42%, rgba(24,14,8,0) 70%); }
+.gx-tier { position: absolute; left: 26px; bottom: 22px; z-index: 2; color: #fff; font-family: var(--font-display); font-size: 42px; font-weight: 800; line-height: 1; letter-spacing: -.01em; text-shadow: 0 2px 16px rgba(0,0,0,.25); }
+.gx-tier small { display: block; margin-bottom: 8px; font-family: var(--font); font-size: 12px; font-weight: 900; letter-spacing: .22em; text-transform: uppercase; color: var(--lime); }
+.gx-stamp { position: absolute; top: 18px; right: 18px; z-index: 2; width: 70px; height: 70px; border-radius: 50%; display: grid; place-content: center; text-align: center; background: var(--lime); color: var(--ink); font-size: 12px; font-weight: 900; line-height: 1; letter-spacing: .04em; box-shadow: 0 0 0 5px rgba(255,255,255,.35), 0 10px 24px rgba(0,0,0,.22); transform: rotate(-10deg); transition: transform .6s var(--ease); }
+.gx-stamp b { display: block; font-size: 28px; font-family: var(--font-display); }
+.gx-card:hover .gx-stamp { transform: rotate(0deg) scale(1.05); }
+.gx-ribbon { position: absolute; top: 20px; left: 20px; z-index: 2; padding: 7px 14px; border-radius: 999px; background: var(--ink); color: var(--lime); font-size: 11.5px; font-weight: 900; letter-spacing: .1em; text-transform: uppercase; }
+.gx-ribbon.is-out { background: #fff; color: #9a2b14; }
+.gx-card.is-soldout .gx-media img { filter: grayscale(.85); }
+.gx-body { flex: 1; display: flex; flex-direction: column; padding: 24px 26px 26px; }
+.gx-body h3 { font-family: var(--font-display); font-size: 24px; font-weight: 800; line-height: 1.25; color: var(--brown); }
+.gx-body h3 a:hover { color: var(--lime-deep); }
+.gx-desc { margin-top: 6px; font-size: 15px; line-height: 1.55; color: #6d5446; }
+.gx-specs { list-style: none; margin: 18px 0 0; padding: 0; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); border: 1px solid var(--latte); border-radius: 16px; overflow: hidden; background: var(--crema); }
+.gx-specs li { display: flex; flex-direction: column; gap: 3px; padding: 12px 14px; min-width: 0; }
+.gx-specs li + li { border-left: 1px solid var(--latte); }
+.gx-specs small { font-size: 10.5px; font-weight: 900; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); }
+.gx-specs b { font-size: 14.5px; font-weight: 800; color: var(--ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.gx-buy { margin-top: auto; padding-top: 22px; display: flex; align-items: flex-end; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
+.gx-price small { display: block; font-size: 11.5px; font-weight: 900; letter-spacing: .14em; text-transform: uppercase; color: var(--muted); }
+.gx-price b { display: block; margin-top: 2px; font-size: 34px; font-weight: 900; line-height: 1.05; letter-spacing: -.02em; color: var(--ink); }
+.gx-price em { display: block; margin-top: 4px; font-style: normal; font-size: 13px; font-weight: 700; color: var(--muted); }
+.gx-actions { display: flex; align-items: center; gap: 16px; }
+.gx-actions .btn { height: 50px; padding: 0 26px; }
+.gx-link { display: inline-flex; align-items: center; gap: 4px; min-height: 40px; font-size: 14px; font-weight: 800; color: var(--brown); text-decoration: underline; text-underline-offset: 4px; }
+.gx-link:hover { color: var(--lime-deep); }
+.gx-notes { margin-top: 26px; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; }
+.gx-note { display: flex; align-items: center; gap: 14px; padding: 16px 18px; border-radius: 18px; background: #fff; border: 1px solid var(--latte); transition: border-color .25s, box-shadow .3s; }
+a.gx-note:hover { border-color: var(--lime-dark); box-shadow: 0 10px 24px rgba(59,32,18,.08); }
+.gx-note i { flex-shrink: 0; width: 44px; height: 44px; border-radius: 50%; display: grid; place-items: center; background: var(--lime-soft); color: var(--brown); }
+.gx-note b { display: block; font-weight: 800; color: var(--brown); }
+.gx-note small { display: block; font-size: 13px; color: var(--muted); line-height: 1.4; }
+@media (max-width: 1100px) {
+  .gx-buy { flex-direction: column; align-items: stretch; }
+  .gx-actions .btn { flex: 1; }
+}
+@media (max-width: 900px) {
+  .gx-notes { grid-template-columns: 1fr; gap: 10px; }
+}
+@media (max-width: 760px) {
+  .gx-card { border-radius: 22px; }
+  .gx-tier { left: 18px; bottom: 16px; font-size: 32px; }
+  .gx-tier small { font-size: 10.5px; margin-bottom: 6px; }
+  .gx-stamp { width: 58px; height: 58px; top: 14px; right: 14px; font-size: 11px; }
+  .gx-stamp b { font-size: 22px; }
+  .gx-ribbon { top: 16px; left: 16px; font-size: 10.5px; padding: 6px 12px; }
+  .gx-body { padding: 18px 18px 20px; }
+  .gx-body h3 { font-size: 20px; }
+  .gx-desc { font-size: 14px; }
+  .gx-specs li { padding: 10px; }
+  .gx-specs small { font-size: 9.5px; letter-spacing: .08em; }
+  .gx-specs b { font-size: 13px; }
+  .gx-price b { font-size: 28px; }
+  .gx-note { padding: 12px 14px; }
+}
+@media (min-width: 761px) { .gx-desc { min-height: calc(1.55em * 2); } }
+@media (max-width: 760px) { .gx-specs b { white-space: normal; line-height: 1.3; } }
