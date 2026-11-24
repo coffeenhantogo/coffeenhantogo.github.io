@@ -11,17 +11,27 @@ service cloud.firestore {
         && request.auth.token.email_verified == true
         && request.auth.token.email in ['coffeenhan178@gmail.com'];
     }
-
-    // Customer profiles: each user can read/write only their own document.
-    match /users/{uid} {
-      allow read, write: if (signedIn() && request.auth.uid == uid) || isAdmin();
+    function userDoc() { return /databases/$(database)/documents/users/$(request.auth.uid); }
+    function isBanned() { return exists(userDoc()) && get(userDoc()).data.get('banned', false) == true; }
+    // fields only the admin may set
+    function touchesModeration() {
+      return request.resource.data.diff(resource == null ? {} : resource.data).affectedKeys()
+        .hasAny(['banned', 'banReason', 'bannedAt', 'bannedBy', 'deleted', 'deletedAt']);
     }
 
-    // Orders: only signed-in customers can place an order (uid must be their own);
-    // members can read their own orders; only the admin can list all and change status.
+    // Customer profiles: owners read/write their own document (not moderation fields); admin full access.
+    match /users/{uid} {
+      allow read: if (signedIn() && request.auth.uid == uid) || isAdmin();
+      allow create: if isAdmin() || (signedIn() && request.auth.uid == uid && !touchesModeration());
+      allow update: if isAdmin() || (signedIn() && request.auth.uid == uid && !isBanned() && !touchesModeration());
+      allow delete: if isAdmin() || (signedIn() && request.auth.uid == uid && !isBanned());
+    }
+
+    // Orders: verified, non-banned customers create their own orders; admin manages all.
     match /orders/{code} {
       allow create: if signedIn()
         && request.auth.token.email_verified == true
+        && !isBanned()
         && request.resource.data.uid == request.auth.uid
         && request.resource.data.keys().hasAll(['code', 'customer', 'items', 'delivery', 'payment'])
         && request.resource.data.code == code

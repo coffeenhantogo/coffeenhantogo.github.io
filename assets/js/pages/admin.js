@@ -148,21 +148,59 @@
       else list.sort((a, b) => t(b.created) - t(a.created));
       $("[data-ulist]").innerHTML = list.length ? `
         <div class="cust-table" role="table">
-          <div class="ct-row ct-head" role="row"><span>Khách hàng</span><span>Liên hệ</span><span>Đăng ký</span><span>Đăng nhập gần nhất</span><span>Đơn hàng</span></div>
+          <div class="ct-row ct-head" role="row"><span>Khách hàng</span><span>Liên hệ</span><span>Đăng ký</span><span>Đăng nhập gần nhất</span><span>Đơn hàng</span><span>Thao tác</span></div>
           ${list.map((r) => {
             const isNew = daysAgo(r.created, 1);
             const prov = r.provider === "google.com" ? '<span class="st st-ok">Google</span>' : '<span class="st st-make">Email</span>';
-            return `<div class="ct-row" role="row">
-              <span class="ct-name"><i class="ct-av">${N.esc((r.name || r.email || "?").charAt(0).toUpperCase())}</i><b>${N.esc(r.name || "(chưa có tên)")}</b>${isNew ? '<span class="st st-new">Mới</span>' : ""}</span>
+            const self = r.id === u.uid;
+            const actions = self ? '<small>Tài khoản của bạn</small>' : r.deleted
+              ? `<span class="st st-cancel">Đã xóa</span><a class="ct-act" href="https://console.firebase.google.com/project/coffeenhantogo/authentication/users" target="_blank" rel="noopener">Xóa đăng nhập ↗</a>`
+              : r.banned
+                ? `<button type="button" class="ct-act" data-unban="${r.id}">Mở khóa</button><button type="button" class="ct-act danger" data-del="${r.id}">Xóa</button>`
+                : `<button type="button" class="ct-act warn" data-ban="${r.id}">Khóa</button><button type="button" class="ct-act danger" data-del="${r.id}">Xóa</button>`;
+            return `<div class="ct-row ${r.banned ? "is-banned" : ""}" role="row">
+              <span class="ct-name"><i class="ct-av">${N.esc(((r.name || "").replace(/^\[Đã xóa\]\s*/, "") || r.email || "?").charAt(0).toUpperCase())}</i><b>${N.esc(r.name || "(chưa có tên)")}</b>${r.banned && !r.deleted ? `<span class="st st-cancel" title="${N.esc(r.banReason || "")}">Đã khóa</span>` : isNew ? '<span class="st st-new">Mới</span>' : ""}</span>
               <span class="ct-contact">${r.phone ? `<a href="tel:${N.esc(r.phone)}">${N.esc(r.phone)}</a>` : '<em>Chưa có SĐT</em>'}<small>${N.esc(r.email || "")}</small></span>
               <span><b class="ct-strong">${r.created ? r.created.toLocaleDateString("vi-VN") : "—"}</b>${prov}</span>
               <span><b class="ct-strong">${ago(r.login)}</b><small>${r.loginCount ? `${r.loginCount} lần đăng nhập` : ""}</small></span>
               <span><b class="ct-strong">${r.stats.n} đơn</b><small>${r.stats.spend ? N.fmtVND(r.stats.spend) : "—"}</small></span>
+              <span class="ct-actions">${actions}${r.banned && r.banReason ? `<small>Lý do: ${N.esc(r.banReason)}</small>` : ""}</span>
             </div>`;
           }).join("")}
         </div>` : `<div class="empty-state"><b>Chưa có khách hàng</b>Khách đăng ký sẽ tự hiện ở đây.</div>`;
     }
     root.addEventListener("click", (e) => { const b = e.target.closest("[data-s]"); if (b) { csort = b.dataset.s; renderUsers(); } });
+
+    /* lock / unlock / delete customers */
+    const FV = api.firebase.firestore.FieldValue;
+    const nameOf = (id) => { const x = users.find((y) => y.id === id); return x ? (x.name || x.email || id) : id; };
+    root.addEventListener("click", async (e) => {
+      const ban = e.target.closest("[data-ban]"), unban = e.target.closest("[data-unban]"), del = e.target.closest("[data-del]");
+      if (!ban && !unban && !del) return;
+      const id = (ban || unban || del).dataset.ban || (ban || unban || del).dataset.unban || (ban || unban || del).dataset.del;
+      const ref = api.db.collection("users").doc(id);
+      try {
+        if (ban) {
+          const reason = prompt(`Khóa tài khoản "${nameOf(id)}"?\nKhách sẽ bị đăng xuất và không thể đăng nhập / đặt hàng.\n\nLý do (VD: spam, đặt đơn ảo, lừa đảo):`, "Spam / đặt đơn ảo");
+          if (reason === null) return;
+          await ref.set({ banned: true, banReason: reason.trim().slice(0, 200), bannedAt: FV.serverTimestamp(), bannedBy: u.email }, { merge: true });
+          N.toast(`Đã khóa: ${nameOf(id)}`);
+        } else if (unban) {
+          if (!confirm(`Mở khóa tài khoản "${nameOf(id)}"?`)) return;
+          await ref.set({ banned: false, banReason: FV.delete(), bannedAt: FV.delete() }, { merge: true });
+          N.toast(`Đã mở khóa: ${nameOf(id)}`);
+        } else {
+          const x = users.find((y) => y.id === id) || {};
+          const mine = orders.filter((o) => o.uid === id);
+          const reason = prompt(`XÓA tài khoản "${nameOf(id)}"?\n• Xóa họ tên, SĐT, địa chỉ của khách\n• Xóa ${mine.length} đơn hàng của khách\n• Khóa vĩnh viễn (không đăng nhập / đặt hàng được)\nKhông thể hoàn tác.\n\nNhập lý do để xác nhận:`, "Lừa đảo");
+          if (reason === null) return;
+          for (const o of mine) await api.db.collection("orders").doc(o.code).delete();
+          await ref.set({ banned: true, deleted: true, banReason: reason.trim().slice(0, 200) || "Đã xóa", bannedAt: FV.serverTimestamp(), deletedAt: FV.serverTimestamp(), bannedBy: u.email,
+            name: x.name ? `[Đã xóa] ${x.name}` : "[Đã xóa]", phone: FV.delete(), address: FV.delete(), branch: FV.delete() }, { merge: true });
+          N.toast(`Đã xóa dữ liệu của ${nameOf(id)}. Bấm "Xóa đăng nhập ↗" để xóa hẳn trong Firebase.`);
+        }
+      } catch (err) { N.toast(api.errorText(err)); }
+    });
     $("[data-cq]").addEventListener("input", (e) => { cq = e.target.value; renderUsers(); });
 
     /* ---------------- realtime data ---------------- */

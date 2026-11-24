@@ -35,6 +35,7 @@
     "auth/operation-not-allowed": "Phương thức đăng nhập này chưa được bật trong Firebase.",
     "auth/requires-recent-login": "Vui lòng đăng nhập lại để thực hiện thao tác này.",
     "permission-denied": "Bạn không có quyền thực hiện thao tác này.",
+    "nhan/banned": "Tài khoản này đã bị khóa do vi phạm chính sách. Vui lòng liên hệ 0909.637.168 nếu có nhầm lẫn.",
     "nhan/not-registered": "Gmail này chưa đăng ký tài khoản tại Nhẫn. Hãy chuyển sang tab <b>Đăng ký</b> để tạo tài khoản.",
   };
 
@@ -52,7 +53,20 @@
         auth, db, firebase: fb, user: null,
         isAdmin: (u = api.user) => !!u && !!u.emailVerified && N.ADMIN_EMAILS.includes((u.email || "").toLowerCase()),
         errorText: (e) => ERR[e && e.code] || (e && e.message) || "Đã có lỗi xảy ra. Vui lòng thử lại.",
-        signIn: (email, pw) => auth.signInWithEmailAndPassword(email.trim(), pw),
+        async signIn(email, pw) {
+          const cred = await auth.signInWithEmailAndPassword(email.trim(), pw);
+          await api.assertNotBanned(cred.user);
+          return cred;
+        },
+        // banned accounts (set by the admin) are signed out immediately
+        async assertNotBanned(u) {
+          if (!u) return;
+          const s = await db.collection("users").doc(u.uid).get().catch(() => null);
+          if (s && s.exists && s.data().banned) {
+            await auth.signOut();
+            const e = new Error("banned"); e.code = "nhan/banned"; throw e;
+          }
+        },
         async signUp({ name, phone, email, password }) {
           const cred = await auth.createUserWithEmailAndPassword(email.trim(), password);
           await cred.user.updateProfile({ displayName: name });
@@ -79,6 +93,7 @@
                 await auth.signOut();
                 const e = new Error("not-registered"); e.code = "nhan/not-registered"; throw e;
               }
+              if (snap.data().banned) { await auth.signOut(); const e = new Error("banned"); e.code = "nhan/banned"; throw e; }
               return { user: u, isNew: false, needsProfile: !snap.data().phone };
             }
             const snap = await ref.get();
@@ -129,6 +144,11 @@
         try {
           const ref = db.collection("users").doc(u.uid);
           const snap = await ref.get();
+          if (snap.exists && snap.data().banned) {           // locked by the admin → sign out everywhere
+            await auth.signOut();
+            if (!/dang-nhap\.html/.test(location.pathname)) location.replace("dang-nhap.html?banned=1");
+            return;
+          }
           const provider = (u.providerData[0] && u.providerData[0].providerId) || "password";
           const data = { email: u.email || "", provider, lastLoginAt: ts(), loginCount: fb.firestore.FieldValue.increment(1) };
           if (!snap.exists) Object.assign(data, { name: u.displayName || "", phone: "", createdAt: u.metadata && u.metadata.creationTime ? fb.firestore.Timestamp.fromDate(new Date(u.metadata.creationTime)) : ts() });

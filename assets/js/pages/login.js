@@ -30,6 +30,7 @@
     if (pw) { const i = pw.parentElement.querySelector("input"); const on = i.type === "password"; i.type = on ? "text" : "password"; pw.textContent = on ? "Ẩn" : "Hiện"; }
   });
   if (N.params.get("tab") === "register") view("register");
+  if (N.params.get("banned")) show("err", "Tài khoản của bạn đã bị khóa do vi phạm chính sách. Vui lòng liên hệ 0909.637.168 nếu có nhầm lẫn.");
 
   /* password strength meter */
   const pwIn = forms.register.password, meter = forms.register.querySelector(".pw-meter i");
