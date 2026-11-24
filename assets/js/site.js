@@ -563,19 +563,21 @@
     document.body.appendChild(s);
     setTimeout(() => N._fbResolve(null), 12000); // never hang pages if Firebase cannot start
   } else N._fbResolve(null);
+  const givenName = (s) => { s = String(s || "").trim(); if (s.includes("@") && !s.includes(" ")) return s.split("@")[0]; const w = s.split(/\s+/); return w[w.length - 1] || s; };
   N.updateAccountUI = (u, api) => {
     const first = u ? (u.displayName || u.email || "?").trim() : "";
     document.querySelectorAll("[data-account-link]").forEach((a) => {
       if (u) {
         const admin = !!(api && api.isAdmin(u));
         a.href = admin ? "quan-tri.html" : "tai-khoan.html";
-        a.dataset.tip = admin ? "Quản trị" : `Tài khoản · ${first.split(/[\s@]/)[0]}`;
+        a.dataset.tip = admin ? "Quản trị" : "Tài khoản của tôi";
         a.setAttribute("aria-label", admin ? "Trang quản trị" : "Tài khoản của tôi");
         a.classList.add("is-in");
         a.classList.toggle("is-admin", admin);
         a.innerHTML = admin
           ? `<span class="hb-avatar hb-admin"><svg viewBox="0 0 24 24" width="17" height="17" aria-hidden="true"><path d="M12 3 5 6v5c0 4.4 3 8.3 7 9.5 4-1.2 7-5.1 7-9.5V6z" fill="currentColor"/><path d="m9 12 2 2 4-4" fill="none" stroke="#A8D636" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span class="hb-admin-label"><b>${esc(first.split(/[\s@]/)[0])}</b><small>Quản trị</small></span>`
-          : `<span class="hb-avatar">${esc(first.charAt(0).toUpperCase())}</span>`;
+          : `<span class="hb-avatar">${esc(givenName(first).charAt(0).toUpperCase())}</span><span class="hb-admin-label hb-user-label"><b>${esc(givenName(first))}</b><small>Tài khoản</small></span>`;
+        a.classList.toggle("is-member", !admin);
       } else {
         a.href = "dang-nhap.html"; a.dataset.tip = "Đăng nhập"; a.classList.remove("is-in"); a.innerHTML = IC.user;
       }
@@ -583,7 +585,7 @@
     document.querySelectorAll("[data-account-mlink]").forEach((a) => {
       const adm = !!(u && api && api.isAdmin(u));
       a.href = !u ? "dang-nhap.html" : adm ? "quan-tri.html" : "tai-khoan.html";
-      a.textContent = !u ? "Đăng nhập / Đăng ký" : adm ? "Trang quản trị" : `Tài khoản (${first.split(/[\s@]/)[0]})`;
+      a.textContent = !u ? "Đăng nhập / Đăng ký" : adm ? "Trang quản trị" : `Tài khoản (${givenName(first)})`;
     });
   };
   // password-reset email throttle: max 1 request / 60s per browser (each new link invalidates the previous one)

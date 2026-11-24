@@ -19,7 +19,7 @@
       const admin = api.isAdmin(u);
       root.innerHTML = `
         <div class="acct-head" data-reveal="up">
-          <div class="acct-avatar">${N.esc((name || u.email || "?").charAt(0).toUpperCase())}</div>
+          <div class="acct-avatar">${N.esc(((name.trim().split(/\s+/).pop()) || u.email || "?").charAt(0).toUpperCase())}</div>
           <div class="acct-hello">
             <span class="kicker">Tài khoản của tôi</span>
             <h1>Xin chào, ${N.esc(name.split(" ").pop() || "bạn")}!${admin ? ' <span class="admin-tag">Quản trị</span>' : ""}</h1>
