@@ -559,7 +559,9 @@
     const ver = me && me.src.includes("?") ? me.src.slice(me.src.indexOf("?")) : "";
     const s = document.createElement("script");
     s.src = `assets/js/auth.js${ver}`;
+    s.onerror = () => N._fbResolve(null);
     document.body.appendChild(s);
+    setTimeout(() => N._fbResolve(null), 12000); // never hang pages if Firebase cannot start
   } else N._fbResolve(null);
   N.updateAccountUI = (u, api) => {
     const first = u ? (u.displayName || u.email || "?").trim() : "";
