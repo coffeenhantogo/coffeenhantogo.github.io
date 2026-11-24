@@ -12,7 +12,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700;800;900&family=Be+Vietnam+Pro:wght@500;600;700;800&display=swap&subset=vietnamese" rel="stylesheet">
-  <link rel="stylesheet" href="assets/css/style.css?v=20261124x">
+  <link rel="stylesheet" href="assets/css/style.css?v=20261124y">
 </head>
 <body data-page="article">
   <main id="main">
@@ -24,8 +24,8 @@
       </div>
     </section>
   </main>
-  <script src="assets/js/data.js?v=20261124x"></script>
-  <script src="assets/js/site.js?v=20261124x"></script>
+  <script src="assets/js/data.js?v=20261124y"></script>
+  <script src="assets/js/site.js?v=20261124y"></script>
   <script>
     (() => {
       const N = window.NHAN, root = document.querySelector("[data-article]");
@@ -40,7 +40,13 @@
       const ld = document.createElement("script"); ld.type = "application/ld+json";
       ld.textContent = JSON.stringify({ "@context": "https://schema.org", "@type": "Article", headline: a.title, image: N.img(a.img), datePublished: a.date, author: { "@type": "Organization", name: "Coffee Nhẫn To Go" } });
       document.head.appendChild(ld);
-      const block = ([t, c]) => t === "p" ? `<p>${N.esc(c)}</p>` : t === "h2" ? `<h2>${N.esc(c)}</h2>` : t === "quote" ? `<blockquote>${N.esc(c)}</blockquote>` : t === "ul" ? `<ul>${c.map((li) => `<li>${N.esc(li)}</li>`).join("")}</ul>` : "";
+      const block = ([t, c, href]) => t === "p" ? `<p>${N.esc(c)}</p>`
+        : t === "h2" ? `<h2>${N.esc(c)}</h2>`
+        : t === "quote" ? `<blockquote>${N.esc(c)}</blockquote>`
+        : t === "ul" ? `<ul>${c.map((li) => `<li>${N.esc(li)}</li>`).join("")}</ul>`
+        : t === "ol" ? `<ol class="steps">${c.map((li) => `<li>${N.esc(li)}</li>`).join("")}</ol>`
+        : t === "cta" && /^[a-z0-9-]+\.html([?#].*)?$/.test(href || "") ? `<p class="article-cta"><a class="btn btn-lime" href="${N.esc(href)}">${N.esc(c)} <span aria-hidden="true">→</span></a></p>`
+        : "";
       const rel = (a.related || []).map((id) => N.byId[id]).filter(Boolean);
       const url = location.href;
       root.innerHTML = `
@@ -56,7 +62,9 @@
         </div>`;
       root.querySelector("[data-copy]").addEventListener("click", async () => N.toast((await N.copy(url)) ? "Đã sao chép đường dẫn" : url));
       root.querySelectorAll("[data-reveal]").forEach((el) => N.anim([el], el.dataset.reveal, { stagger: false }));
-      const more = N.ARTICLES.filter((x) => x.slug !== a.slug).slice(0, 3);
+      // "đọc thêm": same topic first, then the newest
+      const others = N.ARTICLES.filter((x) => x.slug !== a.slug).sort((x, y) => y.date.localeCompare(x.date));
+      const more = [...others.filter((x) => x.tag === a.tag), ...others.filter((x) => x.tag !== a.tag)].slice(0, 3);
       document.querySelector("[data-more]").innerHTML = more.map(N.postCard).join("");
       N.anim(document.querySelectorAll("[data-more] .post"), "up", { mod: 3 });
       N.anim(".bg-crema .section-head", "blur", { stagger: false });

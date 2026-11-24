@@ -31,7 +31,7 @@
   N.anim(drinksGrid.querySelectorAll(".p-card"), "up");
   document.addEventListener("nhan:shop", () => { renderProducts(); N.anim(groundGrid.querySelectorAll(".feature-card"), "up"); N.anim(drinksGrid.querySelectorAll(".p-card"), "up"); });
   const postsGrid = document.querySelector('[data-grid="posts"]');
-  postsGrid.innerHTML = N.ARTICLES.slice(0, 3).map(N.postCard).join("");
+  postsGrid.innerHTML = N.ARTICLES.slice().sort((a, b) => b.date.localeCompare(a.date)).slice(0, 3).map(N.postCard).join("");
 
 
   /* hero carousel */

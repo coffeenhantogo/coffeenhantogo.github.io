@@ -1517,3 +1517,10 @@ img.img-ready { opacity: 1; transition: opacity .7s ease; }
   .section-more .btn-outline:hover span { transform: translateX(5px); color: var(--lime); }
 }
 .section-more .btn-outline:focus-visible { background: var(--ink); border-color: var(--ink); color: #fff; }
+
+/* article: numbered steps + call-to-action */
+.prose ol.steps { list-style: none; counter-reset: st; padding: 0; margin-top: 16px; display: grid; gap: 12px; }
+.prose ol.steps li { counter-increment: st; position: relative; padding: 14px 16px 14px 58px; border-radius: 14px; background: var(--crema); border: 1px solid var(--latte); }
+.prose ol.steps li::before { content: counter(st); position: absolute; left: 14px; top: 12px; width: 30px; height: 30px; border-radius: 50%; display: grid; place-items: center; background: var(--ink); color: var(--lime); font-weight: 900; font-size: 14px; }
+.prose h2 + ol.steps { margin-top: 10px; }
+.prose .article-cta { margin-top: 26px; }
