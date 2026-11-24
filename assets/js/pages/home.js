@@ -66,17 +66,8 @@
     if (Math.abs(dx) > 40) { go(current + (dx < 0 ? 1 : -1)); restart(); }
     sx = null;
   });
-  // word-by-word title reveal + subtle mouse parallax on the background photo
+  // word-by-word title reveal (the mouse parallax on the photo was removed: it exposed the edges)
   document.querySelectorAll(".hero-title").forEach(N.splitWords);
-  if (!N.STATIC && !reduced && matchMedia("(hover: hover) and (pointer: fine)").matches) {
-    hero.addEventListener("pointermove", (e) => {
-      const r = hero.getBoundingClientRect();
-      const x = (e.clientX - r.left) / r.width - 0.5, y = (e.clientY - r.top) / r.height - 0.5;
-      hero.style.setProperty("--px", `${(-x * 22).toFixed(1)}px`);
-      hero.style.setProperty("--py", `${(-y * 14).toFixed(1)}px`);
-    });
-    hero.addEventListener("pointerleave", () => { hero.style.setProperty("--px", "0px"); hero.style.setProperty("--py", "0px"); });
-  }
   go(Math.max(0, Math.min(slides.length - 1, parseInt(N.params.get("slide") || "1", 10) - 1)));
   restart();
   addEventListener("load", () => slides.forEach((s) => { const im = s.querySelector(".slide-bg"); if (im) im.loading = "eager"; }));

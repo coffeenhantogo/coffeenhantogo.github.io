@@ -949,8 +949,7 @@ img.img-ready { opacity: 1; transition: opacity .7s ease; }
 .js-anim .section-head .section-title .w { opacity: 0; transform: translateY(45%); transition: opacity .6s ease, transform .8s var(--ease); transition-delay: calc(.1s + var(--w, 0) * 70ms); }
 .js-anim .section-head.in .section-title .w { opacity: 1; transform: none; }
 
-/* hero: mouse parallax (translate composes with the Ken Burns transform) + timed dots */
-.slide-bg { translate: var(--px, 0) var(--py, 0); transition: transform 7s ease-out, translate .9s var(--ease); }
+/* hero: timed dots */
 .hero-dots button { position: relative; overflow: hidden; }
 .hero-dots button[aria-selected="true"] { background: rgba(255,255,255,.35); }
 .hero-dots button[aria-selected="true"]::after { content: ""; position: absolute; inset: 0; background: var(--lime); transform-origin: 0 50%; animation: dotFill 6.5s linear forwards; }
@@ -1524,3 +1523,4 @@ img.img-ready { opacity: 1; transition: opacity .7s ease; }
 .prose ol.steps li::before { content: counter(st); position: absolute; left: 14px; top: 12px; width: 30px; height: 30px; border-radius: 50%; display: grid; place-items: center; background: var(--ink); color: var(--lime); font-weight: 900; font-size: 14px; }
 .prose h2 + ol.steps { margin-top: 10px; }
 .prose .article-cta { margin-top: 26px; }
+.hero-title em { white-space: nowrap; } /* keep "to go" together */
