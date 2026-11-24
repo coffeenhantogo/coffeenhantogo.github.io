@@ -807,7 +807,7 @@
     let cur = null;
     const reset = (el) => { el.classList.remove("tilting"); ["--rx", "--ry"].forEach((v) => el.style.removeProperty(v)); };
     document.addEventListener("pointermove", (e) => {
-      const el = e.target.closest(".p-media-wrap, .post-media, .pd-main-img");
+      const el = e.target.closest(".p-media-wrap:not(.gx-media), .post-media, .pd-main-img");
       if (cur && cur !== el) { reset(cur); cur = null; }
       if (!el) return;
       cur = el;

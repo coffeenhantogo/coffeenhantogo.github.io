@@ -1716,3 +1716,5 @@ a.gx-note:hover { border-color: var(--lime-dark); box-shadow: 0 10px 24px rgba(5
 .prose .article-shot { margin: 20px auto 8px; max-width: 330px; text-align: center; }
 .prose .article-shot img { display: block; width: 100%; height: auto; border-radius: 26px; border: 6px solid var(--ink); box-shadow: 0 18px 40px rgba(59,32,18,.18); background: #fff; }
 .prose .article-shot figcaption { margin-top: 10px; font-size: 13.5px; color: var(--muted); line-height: 1.45; }
+/* ground showcase image: no 3D tilt (it exposed the card edges) – only the slow zoom inside the frame */
+.gx-media, .gx-card .p-media-wrap { transform: none !important; }
