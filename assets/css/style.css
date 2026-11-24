@@ -1314,3 +1314,28 @@ img.img-ready { opacity: 1; transition: opacity .7s ease; }
 .o-steps span.on::before { background: var(--lime-dark); }
 .order-item h3 .st { vertical-align: middle; margin-left: 6px; }
 
+
+/* admin: tabs + customers table */
+.admin-tabs { display: inline-flex; gap: 4px; padding: 5px; border-radius: 999px; background: var(--card); margin-bottom: 22px; }
+.admin-tabs button { height: 44px; padding: 0 22px; border-radius: 999px; font-weight: 800; font-size: 15px; color: var(--muted); transition: background .25s, color .25s, box-shadow .25s; }
+.admin-tabs button small { margin-left: 6px; padding: 2px 8px; border-radius: 999px; background: rgba(86,49,33,.1); font-size: 12px; }
+.admin-tabs button.is-active { background: #fff; color: var(--ink); box-shadow: var(--shadow-sm); }
+.admin-tabs button.is-active small { background: var(--lime); color: var(--ink); }
+.cust-table { border: 1px solid var(--latte); border-radius: 18px; overflow: hidden; background: #fff; }
+.ct-row { display: grid; grid-template-columns: 1.5fr 1.4fr 1fr 1.1fr .8fr; gap: 14px; align-items: center; padding: 14px 18px; border-top: 1px solid var(--latte); font-size: 14px; color: #6d5446; }
+.ct-row > span { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+.ct-head { border-top: 0; background: var(--crema); font-size: 12px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+.ct-row:not(.ct-head):hover { background: #fffdf9; }
+.ct-name { flex-direction: row !important; align-items: center; gap: 10px !important; }
+.ct-name b { color: var(--ink); font-size: 15px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ct-av { width: 36px; height: 36px; flex-shrink: 0; border-radius: 50%; display: grid; place-items: center; background: var(--ink); color: var(--lime); font-style: normal; font-weight: 900; }
+.ct-contact a { font-weight: 800; color: var(--lime-deep); }
+.ct-contact em { color: var(--muted); font-style: normal; }
+.ct-row small { color: var(--muted); font-size: 12.5px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ct-strong { color: var(--ink); font-weight: 800; }
+.ct-row .st { align-self: flex-start; }
+@media (max-width: 900px) {
+  .ct-head { display: none; }
+  .ct-row { grid-template-columns: 1fr 1fr; gap: 10px 14px; }
+  .ct-name { grid-column: 1 / -1; }
+}

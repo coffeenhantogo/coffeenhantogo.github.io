@@ -99,8 +99,25 @@
         },
       };
 
+      // record sign-in activity on the customer's own profile (for admin stats)
+      const touch = async (u) => {
+        try {
+          const ref = db.collection("users").doc(u.uid);
+          const snap = await ref.get();
+          const provider = (u.providerData[0] && u.providerData[0].providerId) || "password";
+          const data = { email: u.email || "", provider, lastLoginAt: ts(), loginCount: fb.firestore.FieldValue.increment(1) };
+          if (!snap.exists) Object.assign(data, { name: u.displayName || "", phone: "", createdAt: u.metadata && u.metadata.creationTime ? fb.firestore.Timestamp.fromDate(new Date(u.metadata.creationTime)) : ts() });
+          else if (!snap.data().name && u.displayName) data.name = u.displayName;
+          // count at most once per browser session
+          const k = `nhan-touch-${u.uid}`;
+          if (sessionStorage.getItem(k)) delete data.loginCount; else sessionStorage.setItem(k, "1");
+          await ref.set(data, { merge: true });
+        } catch { /* stats are best-effort */ }
+      };
+
       let first = true;
       auth.onAuthStateChanged((u) => {
+        if (u) touch(u);
         api.user = u;
         N.updateAccountUI && N.updateAccountUI(u, api);
         document.dispatchEvent(new CustomEvent("nhan:user", { detail: u }));

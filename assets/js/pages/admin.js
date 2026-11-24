@@ -1,4 +1,4 @@
-/* Admin: live orders from Firestore (admin emails only, enforced by firestore.rules) */
+/* Admin: realtime orders + customers (admin emails only, enforced by firestore.rules) */
 (() => {
   const N = window.NHAN;
   const root = document.querySelector("[data-admin]");
@@ -6,8 +6,18 @@
     pending: ["Mới đặt", "st-new"], confirmed: ["Đã xác nhận", "st-ok"], making: ["Đang pha / chuẩn bị", "st-make"],
     delivering: ["Đang giao", "st-ship"], done: ["Hoàn thành", "st-done"], cancelled: ["Đã hủy", "st-cancel"],
   };
-  const dateOf = (o) => (o.createdAt && o.createdAt.toDate ? o.createdAt.toDate() : new Date(o.createdAtLocal || Date.now()));
-  const sameDay = (a, b) => a.toDateString() === b.toDateString();
+  const toDate = (v, fallback) => (v && v.toDate ? v.toDate() : v ? new Date(v) : fallback ? new Date(fallback) : null);
+  const dateOf = (o) => toDate(o.createdAt, o.createdAtLocal) || new Date();
+  const sameDay = (a, b) => a && a.toDateString() === b.toDateString();
+  const daysAgo = (d, n) => d && Date.now() - d.getTime() <= n * 864e5;
+  const fmtDT = (d) => (d ? `${d.toLocaleDateString("vi-VN")} ${d.toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit" })}` : "—");
+  const ago = (d) => {
+    if (!d) return "—";
+    const m = Math.round((Date.now() - d.getTime()) / 60000);
+    if (m < 1) return "vừa xong"; if (m < 60) return `${m} phút trước`;
+    const h = Math.round(m / 60); if (h < 24) return `${h} giờ trước`;
+    const dd = Math.round(h / 24); return dd < 30 ? `${dd} ngày trước` : d.toLocaleDateString("vi-VN");
+  };
 
   N.fbReady.then((api) => {
     if (!api) { N.requireConfig(root); return; }
@@ -18,36 +28,64 @@
       return;
     }
 
-    let orders = [], filter = "active", q = "", firstLoad = true;
+    let orders = [], users = [], filter = "active", q = "", cq = "", csort = "new", firstLoad = true, view = location.hash === "#khach-hang" ? "customers" : "orders", autoAll = true;
     root.innerHTML = `
       <div class="admin-head" data-reveal="up">
-        <div><span class="kicker">Quản trị</span><h1>Đơn hàng</h1><p>Cập nhật theo thời gian thực · ${N.esc(u.email)}</p></div>
+        <div><span class="kicker">Quản trị</span><h1>Bảng điều khiển</h1><p>Cập nhật theo thời gian thực · ${N.esc(u.email)}</p></div>
         <label class="check"><input type="checkbox" data-sound checked><span>Âm báo khi có đơn mới</span></label>
       </div>
-      <div class="admin-stats" data-stats></div>
-      <div class="toolbar">
-        <div class="filter-chips" data-filters></div>
-        <div class="toolbar-right"><label class="search-inline"><svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><circle cx="11" cy="11" r="6.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="m16 16 4 4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg><input class="input" type="search" placeholder="Tìm mã đơn, tên, SĐT…" data-q></label></div>
+      <div class="admin-tabs" role="tablist">
+        <button role="tab" data-view="orders">Đơn hàng <small data-n-orders>0</small></button>
+        <button role="tab" data-view="customers">Khách hàng <small data-n-users>0</small></button>
       </div>
-      <div class="admin-list" data-list></div>`;
+      <section data-pane="orders">
+        <div class="admin-stats" data-stats></div>
+        <div class="toolbar">
+          <div class="filter-chips" data-filters></div>
+          <div class="toolbar-right"><label class="search-inline"><svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><circle cx="11" cy="11" r="6.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="m16 16 4 4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg><input class="input" type="search" placeholder="Tìm mã đơn, tên, SĐT…" data-q></label></div>
+        </div>
+        <div class="admin-list" data-list></div>
+      </section>
+      <section data-pane="customers" hidden>
+        <div class="admin-stats" data-ustats></div>
+        <div class="toolbar">
+          <div class="filter-chips" data-csort>
+            <button class="fchip" data-s="new">Mới đăng ký</button>
+            <button class="fchip" data-s="login">Đăng nhập gần đây</button>
+            <button class="fchip" data-s="spend">Chi tiêu nhiều</button>
+          </div>
+          <div class="toolbar-right"><label class="search-inline"><svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><circle cx="11" cy="11" r="6.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="m16 16 4 4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg><input class="input" type="search" placeholder="Tìm tên, email, SĐT…" data-cq></label></div>
+        </div>
+        <div class="cust-list" data-ulist></div>
+      </section>`;
     const $ = (s) => root.querySelector(s);
     N.anim(root.querySelectorAll("[data-reveal]"), "up", { stagger: false });
 
+    const setView = (v) => {
+      view = v;
+      root.querySelectorAll("[data-view]").forEach((b) => { const on = b.dataset.view === v; b.classList.toggle("is-active", on); b.setAttribute("aria-selected", on); });
+      root.querySelectorAll("[data-pane]").forEach((p) => (p.hidden = p.dataset.pane !== v));
+      history.replaceState(null, "", v === "customers" ? "#khach-hang" : location.pathname);
+    };
+    root.addEventListener("click", (e) => { const b = e.target.closest("[data-view]"); if (b) setView(b.dataset.view); });
+    setView(view);
+
+    /* ---------------- orders ---------------- */
     const FILTERS = [["active", "Cần xử lý"], ["pending", "Mới"], ["confirmed", "Đã xác nhận"], ["making", "Đang pha"], ["delivering", "Đang giao"], ["done", "Hoàn thành"], ["cancelled", "Đã hủy"], ["all", "Tất cả"]];
     const isActive = (o) => !["done", "cancelled"].includes(o.status);
-
     function beep() {
       if (!$("[data-sound]").checked) return;
       try { const c = new (window.AudioContext || window.webkitAudioContext)(); [0, .18].forEach((t, i) => { const o = c.createOscillator(), g = c.createGain(); o.frequency.value = i ? 1046 : 784; o.connect(g); g.connect(c.destination); g.gain.setValueAtTime(.18, c.currentTime + t); g.gain.exponentialRampToValueAtTime(.001, c.currentTime + t + .25); o.start(c.currentTime + t); o.stop(c.currentTime + t + .26); }); } catch { /* no audio */ }
     }
-
-    function render() {
+    function renderOrders() {
       const today = new Date();
+      if (autoAll && !orders.some(isActive) && orders.length) filter = "all";
       const todays = orders.filter((o) => sameDay(dateOf(o), today));
       const revenue = todays.filter((o) => o.status !== "cancelled").reduce((s, o) => s + (o.totalAmount || 0), 0);
+      $("[data-n-orders]").textContent = orders.length;
       $("[data-stats]").innerHTML = [
         ["Đơn hôm nay", todays.length], ["Cần xử lý", orders.filter(isActive).length],
-        ["Doanh thu hôm nay", N.fmtVND(revenue)], ["Chuyển khoản hôm nay", todays.filter((o) => /chuyển khoản/i.test(o.payment)).length],
+        ["Doanh thu hôm nay", N.fmtVND(revenue)], ["Tổng đơn", orders.length],
       ].map(([k, v]) => `<div class="stat"><span>${k}</span><b>${v}</b></div>`).join("");
       $("[data-filters]").innerHTML = FILTERS.map(([k, t]) => {
         const n = k === "all" ? orders.length : k === "active" ? orders.filter(isActive).length : orders.filter((o) => o.status === k).length;
@@ -63,7 +101,7 @@
         return `<article class="admin-order ${cls}">
           <div class="ad-top">
             <div><b class="ad-code">${N.esc(o.code)}</b> <span class="st ${cls}">${st}</span>${o.uid ? ' <span class="st st-ok">Thành viên</span>' : ""}</div>
-            <span class="ad-time">${d.toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit" })} · ${d.toLocaleDateString("vi-VN")}</span>
+            <span class="ad-time">${fmtDT(d)}</span>
           </div>
           <div class="ad-body">
             <div class="ad-cust"><b>${N.esc(o.customer.name)}</b><a href="tel:${N.esc(o.customer.phone)}">${N.esc(o.customer.phone)}</a>${o.customer.email ? `<span>${N.esc(o.customer.email)}</span>` : ""}<span>${where}</span><span>⏰ ${N.esc(o.delivery.time)}</span></div>
@@ -78,23 +116,66 @@
             </div>
           </div>
         </article>`;
-      }).join("") : `<div class="empty-state"><b>Không có đơn nào</b>Đơn mới sẽ tự hiện ở đây.</div>`;
+      }).join("") : `<div class="empty-state"><b>Không có đơn nào ở mục này</b>Bấm “Tất cả” để xem toàn bộ đơn.</div>`;
     }
-
-    root.addEventListener("click", (e) => { const c = e.target.closest("[data-f]"); if (c && c.closest("[data-filters]")) { filter = c.dataset.f; render(); } });
-    $("[data-q]").addEventListener("input", (e) => { q = e.target.value; render(); });
+    root.addEventListener("click", (e) => { const c = e.target.closest("[data-f]"); if (c && c.closest("[data-filters]")) { filter = c.dataset.f; autoAll = false; renderOrders(); } });
+    $("[data-q]").addEventListener("input", (e) => { q = e.target.value; renderOrders(); });
     root.addEventListener("change", async (e) => {
       const s = e.target.closest(".ad-status"); if (!s) return;
       try { await api.db.collection("orders").doc(s.dataset.code).update({ status: s.value, updatedAt: api.firebase.firestore.FieldValue.serverTimestamp() }); N.toast(`Đơn ${s.dataset.code}: ${STATUS[s.value][0]}`); }
       catch (err) { N.toast(api.errorText(err)); }
     });
 
-    api.db.collection("orders").orderBy("createdAt", "desc").limit(300).onSnapshot((snap) => {
+    /* ---------------- customers ---------------- */
+    function renderUsers() {
+      const today = new Date();
+      const byUid = {};
+      orders.forEach((o) => { if (!o.uid) return; const b = (byUid[o.uid] = byUid[o.uid] || { n: 0, spend: 0, last: null }); b.n++; if (o.status !== "cancelled") b.spend += o.totalAmount || 0; const d = dateOf(o); if (!b.last || d > b.last) b.last = d; });
+      const rows = users.map((x) => ({ ...x, created: toDate(x.createdAt), login: toDate(x.lastLoginAt), stats: byUid[x.id] || { n: 0, spend: 0, last: null } }));
+      $("[data-n-users]").textContent = rows.length;
+      $("[data-ustats]").innerHTML = [
+        ["Tổng khách hàng", rows.length],
+        ["Đăng ký mới hôm nay", rows.filter((r) => sameDay(r.created, today)).length],
+        ["Đăng ký 7 ngày qua", rows.filter((r) => daysAgo(r.created, 7)).length],
+        ["Đăng nhập hôm nay", rows.filter((r) => sameDay(r.login, today)).length],
+      ].map(([k, v]) => `<div class="stat"><span>${k}</span><b>${v}</b></div>`).join("");
+      root.querySelectorAll("[data-s]").forEach((b) => b.classList.toggle("is-active", b.dataset.s === csort));
+      const nq = N.norm(cq);
+      let list = rows.filter((r) => !nq || N.norm(`${r.name || ""} ${r.email || ""} ${r.phone || ""}`).includes(nq));
+      const t = (d) => (d ? d.getTime() : 0);
+      if (csort === "login") list.sort((a, b) => t(b.login) - t(a.login));
+      else if (csort === "spend") list.sort((a, b) => b.stats.spend - a.stats.spend || b.stats.n - a.stats.n);
+      else list.sort((a, b) => t(b.created) - t(a.created));
+      $("[data-ulist]").innerHTML = list.length ? `
+        <div class="cust-table" role="table">
+          <div class="ct-row ct-head" role="row"><span>Khách hàng</span><span>Liên hệ</span><span>Đăng ký</span><span>Đăng nhập gần nhất</span><span>Đơn hàng</span></div>
+          ${list.map((r) => {
+            const isNew = daysAgo(r.created, 1);
+            const prov = r.provider === "google.com" ? '<span class="st st-ok">Google</span>' : '<span class="st st-make">Email</span>';
+            return `<div class="ct-row" role="row">
+              <span class="ct-name"><i class="ct-av">${N.esc((r.name || r.email || "?").charAt(0).toUpperCase())}</i><b>${N.esc(r.name || "(chưa có tên)")}</b>${isNew ? '<span class="st st-new">Mới</span>' : ""}</span>
+              <span class="ct-contact">${r.phone ? `<a href="tel:${N.esc(r.phone)}">${N.esc(r.phone)}</a>` : '<em>Chưa có SĐT</em>'}<small>${N.esc(r.email || "")}</small></span>
+              <span><b class="ct-strong">${r.created ? r.created.toLocaleDateString("vi-VN") : "—"}</b>${prov}</span>
+              <span><b class="ct-strong">${ago(r.login)}</b><small>${r.loginCount ? `${r.loginCount} lần đăng nhập` : ""}</small></span>
+              <span><b class="ct-strong">${r.stats.n} đơn</b><small>${r.stats.spend ? N.fmtVND(r.stats.spend) : "—"}</small></span>
+            </div>`;
+          }).join("")}
+        </div>` : `<div class="empty-state"><b>Chưa có khách hàng</b>Khách đăng ký sẽ tự hiện ở đây.</div>`;
+    }
+    root.addEventListener("click", (e) => { const b = e.target.closest("[data-s]"); if (b) { csort = b.dataset.s; renderUsers(); } });
+    $("[data-cq]").addEventListener("input", (e) => { cq = e.target.value; renderUsers(); });
+
+    /* ---------------- realtime data ---------------- */
+    api.db.collection("orders").orderBy("createdAt", "desc").limit(500).onSnapshot((snap) => {
       const added = snap.docChanges().filter((c) => c.type === "added").length;
       orders = snap.docs.map((d) => d.data());
       if (!firstLoad && added) { beep(); N.toast(`Có ${added} đơn mới!`); }
       firstLoad = false;
-      render();
+      renderOrders(); renderUsers();
     }, (err) => { $("[data-list]").innerHTML = `<div class="form-alert err">${N.esc(api.errorText(err))}</div>`; });
+    api.db.collection("users").limit(1000).onSnapshot((snap) => {
+      users = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+      renderUsers();
+    }, (err) => { $("[data-ulist]").innerHTML = `<div class="form-alert err">${N.esc(api.errorText(err))}</div>`; });
   });
 })();
