@@ -12,7 +12,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700;800;900&family=Be+Vietnam+Pro:wght@500;600;700;800&display=swap&subset=vietnamese" rel="stylesheet">
-  <link rel="stylesheet" href="assets/css/style.css?v=20261125d">
+  <link rel="stylesheet" href="assets/css/style.css?v=20261125e">
 </head>
 <body data-page="article">
   <main id="main">
@@ -24,8 +24,8 @@
       </div>
     </section>
   </main>
-  <script src="assets/js/data.js?v=20261125d"></script>
-  <script src="assets/js/site.js?v=20261125d"></script>
+  <script src="assets/js/data.js?v=20261125e"></script>
+  <script src="assets/js/site.js?v=20261125e"></script>
   <script>
     (() => {
       const N = window.NHAN, root = document.querySelector("[data-article]");
@@ -45,6 +45,7 @@
         : t === "quote" ? `<blockquote>${N.esc(c)}</blockquote>`
         : t === "ul" ? `<ul>${c.map((li) => `<li>${N.esc(li)}</li>`).join("")}</ul>`
         : t === "ol" ? `<ol class="steps">${c.map((li) => `<li>${N.esc(li)}</li>`).join("")}</ol>`
+        : t === "img" && /^[a-z0-9/-]+\.(jpg|png|webp)$/.test(c || "") ? `<figure class="article-shot"><img src="assets/img/${N.esc(c)}" alt="${N.esc(href || "")}" loading="lazy"><figcaption>${N.esc(href || "")}</figcaption></figure>`
         : t === "cta" && /^[a-z0-9-]+\.html([?#].*)?$/.test(href || "") ? `<p class="article-cta"><a class="btn btn-lime" href="${N.esc(href)}">${N.esc(c)} <span aria-hidden="true">→</span></a></p>`
         : "";
       const rel = (a.related || []).map((id) => N.byId[id]).filter(Boolean);
