@@ -1,4 +1,4 @@
-/* Account page: profile, order history (Firestore), sign out */
+/* Account page (dashboard): overview, live orders, profile + avatar, security */
 (() => {
   const N = window.NHAN, S = N.STORE;
   const root = document.querySelector("[data-account]");
@@ -17,64 +17,125 @@
       const prof = (await api.getProfile().catch(() => ({}))) || {};
       const name = prof.name || u.displayName || "";
       const admin = api.isAdmin(u);
+      const isPw = u.providerData.some((p) => p.providerId === "password");
+      const hasGoogle = u.providerData.some((p) => p.providerId === "google.com");
+      const since = u.metadata && u.metadata.creationTime ? new Date(u.metadata.creationTime) : null;
+      const ico = (d) => `<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${d}</svg>`;
+      const IC2 = {
+        home: ico('<path d="M3 11 12 4l9 7"/><path d="M5 10v10h14V10"/><path d="M10 20v-5h4v5"/>'),
+        bag: ico('<path d="M6 7h12l1 13H5z"/><path d="M9 7V5a3 3 0 0 1 6 0v2"/>'),
+        user: ico('<circle cx="12" cy="8" r="4"/><path d="M4 20c1.5-4 4.5-6 8-6s6.5 2 8 6"/>'),
+        lock: ico('<rect x="5" y="10" width="14" height="10" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/>'),
+        out: ico('<path d="M15 4h4v16h-4"/><path d="M10 8l-4 4 4 4"/><path d="M6 12h10"/>'),
+        cup: ico('<path d="M5 8h12v6a5 5 0 0 1-5 5H10a5 5 0 0 1-5-5z"/><path d="M17 10h1.5a2.5 2.5 0 0 1 0 5H17"/><path d="M8 3v2M12 3v2"/>'),
+        beans: ico('<ellipse cx="9" cy="12" rx="4.5" ry="7" transform="rotate(-30 9 12)"/><path d="M6.5 7.5c2 2 2.5 5 1 9"/><ellipse cx="17" cy="10" rx="3" ry="5" transform="rotate(25 17 10)"/>'),
+        chat: ico('<path d="M4 5h16v11H9l-5 4z"/><path d="M8 9h8M8 12h5"/>'),
+      };
       root.innerHTML = `
-        <div class="acct-head" data-reveal="up">
-          <div class="acct-av-wrap">
-            <div class="acct-avatar" data-av></div>
-            <button type="button" class="acct-av-cam" data-av-pick aria-label="Đổi ảnh đại diện" title="Đổi ảnh đại diện"><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg></button>
+        <section class="dash-hero" data-reveal="up">
+          <div class="dh-inner">
+            <div class="acct-av-wrap dh-av">
+              <div class="acct-avatar" data-av></div>
+              <button type="button" class="acct-av-cam" data-av-pick aria-label="Đổi ảnh đại diện" title="Đổi ảnh đại diện"><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg></button>
+            </div>
+            <div class="dh-text">
+              <span class="dh-kicker">Tài khoản của tôi</span>
+              <h1>Xin chào, ${N.esc(name.split(" ").pop() || "bạn")}!${admin ? ' <span class="admin-tag">Quản trị</span>' : ""}</h1>
+              <p>${N.esc(u.email || "")} ${u.emailVerified ? '<span class="dh-badge ok">✓ Đã xác thực</span>' : '<span class="dh-badge warn">Chưa xác thực email</span>'}${since ? `<span class="dh-since">Thành viên từ ${since.toLocaleDateString("vi-VN", { month: "2-digit", year: "numeric" })}</span>` : ""}</p>
+            </div>
+            <div class="dh-actions">
+              ${admin ? '<a class="btn btn-outline-light btn-sm" href="quan-tri.html">Trang quản trị</a>' : ""}
+              <a class="btn btn-lime btn-sm" href="thuc-don.html">${N.IC.plus} Đặt món</a>
+            </div>
           </div>
-          <div class="acct-hello">
-            <span class="kicker">Tài khoản của tôi</span>
-            <h1>Xin chào, ${N.esc(name.split(" ").pop() || "bạn")}!${admin ? ' <span class="admin-tag">Quản trị</span>' : ""}</h1>
-            <p>${N.esc(u.email || "")} ${u.emailVerified ? '<span class="st st-done">Đã xác thực email</span>' : '<span class="st st-new">Chưa xác thực email</span> <button type="button" class="auth-link" data-verify>Gửi lại email xác thực</button>'}</p>
+          <div class="dh-stats">
+            <div><span>Đơn hàng</span><b data-st-n>—</b></div>
+            <div><span>Đã chi tiêu</span><b data-st-spend>—</b></div>
+            <div><span>Đang xử lý</span><b data-st-active>—</b></div>
           </div>
-          <div class="acct-actions">
-            ${admin ? '<a class="btn btn-ink btn-sm" href="quan-tri.html">Trang quản trị</a>' : ""}
-            <a class="btn btn-lime btn-sm" href="thuc-don.html">Đặt món</a>
-            <button type="button" class="btn btn-outline btn-sm" data-signout>Đăng xuất</button>
-          </div>
-        </div>
-        <div class="acct-grid">
-          <form class="co-card acct-profile" data-profile novalidate data-reveal="left">
-            <h2><span class="step">1</span> Thông tin cá nhân</h2>
-            <div class="form-alert" data-pmsg hidden></div>
-            <div class="av-edit">
-              <div class="acct-avatar av-sm" data-av></div>
-              <div class="av-edit-body">
-                <b>Ảnh đại diện</b>
-                <span data-av-src></span>
-                <div class="av-edit-btns">
-                  <button type="button" class="btn btn-ink btn-sm" data-av-pick>Tải ảnh lên</button>
-                  <button type="button" class="btn btn-outline btn-sm" data-av-adjust hidden>Căn chỉnh ảnh</button>
-                  <button type="button" class="btn btn-outline btn-sm" data-av-google hidden>Dùng ảnh Google</button>
-                  <button type="button" class="btn btn-outline btn-sm btn-g" data-av-link hidden><svg viewBox="0 0 48 48" width="16" height="16" aria-hidden="true"><path fill="#FFC107" d="M43.6 20.5H42V20H24v8h11.3C33.7 32.7 29.2 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.8 1.2 7.9 3l5.7-5.7C34 6.1 29.3 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20 20-8.9 20-20c0-1.3-.1-2.4-.4-3.5z"/><path fill="#FF3D00" d="m6.3 14.7 6.6 4.8C14.7 15.1 19 12 24 12c3.1 0 5.8 1.2 7.9 3l5.7-5.7C34 6.1 29.3 4 24 4 16.3 4 9.7 8.3 6.3 14.7z"/><path fill="#4CAF50" d="M24 44c5.2 0 9.9-2 13.4-5.2l-6.2-5.2C29.2 35.1 26.7 36 24 36c-5.2 0-9.6-3.3-11.3-8l-6.5 5C9.5 39.6 16.2 44 24 44z"/><path fill="#1976D2" d="M43.6 20.5H42V20H24v8h11.3c-.8 2.2-2.2 4.2-4.1 5.6l6.2 5.2C37 39.2 44 34 44 24c0-1.3-.1-2.4-.4-3.5z"/></svg> Lấy ảnh từ Google</button>
-                  <button type="button" class="auth-link" data-av-remove hidden>Xóa ảnh</button>
+        </section>
+        <div class="dash">
+          <nav class="dash-nav" aria-label="Mục tài khoản" data-reveal="left">
+            <button type="button" data-tab="tong-quan">${IC2.home}<span>Tổng quan</span></button>
+            <button type="button" data-tab="don-hang">${IC2.bag}<span>Đơn hàng</span><small data-n-orders hidden></small></button>
+            <button type="button" data-tab="thong-tin">${IC2.user}<span>Thông tin cá nhân</span></button>
+            <button type="button" data-tab="bao-mat">${IC2.lock}<span>Bảo mật</span></button>
+            <button type="button" class="dn-out" data-signout>${IC2.out}<span>Đăng xuất</span></button>
+          </nav>
+          <div class="dash-main">
+            <section data-panel="tong-quan">
+              <div class="dcard">
+                <div class="dcard-head"><h2>Đơn đang xử lý</h2><button type="button" class="dlink" data-go="don-hang">Tất cả đơn →</button></div>
+                <div data-active><div class="acct-loading"><span class="spinner"></span> Đang tải…</div></div>
+              </div>
+              <div class="dcard">
+                <div class="dcard-head"><h2 data-fav-title>Món bạn hay đặt</h2><a class="dlink" href="thuc-don.html">Xem thực đơn →</a></div>
+                <div class="fav-grid" data-favs></div>
+              </div>
+              <div class="dquick">
+                <a href="thuc-don.html"><i>${IC2.cup}</i><span><b>Thực đơn đồ uống</b><small>Cà phê, bạc xỉu, trà sữa</small></span></a>
+                <a href="san-pham.html?loai=ca-phe-xay"><i>${IC2.beans}</i><span><b>Cà phê xay 1kg</b><small>Pha tại nhà, cho quán</small></span></a>
+                <a href="${S.zalo}" target="_blank" rel="noopener"><i>${IC2.chat}</i><span><b>Nhắn Zalo cho Nhẫn</b><small>${S.phoneDisplay}</small></span></a>
+              </div>
+            </section>
+            <section data-panel="don-hang" hidden>
+              <div class="dcard">
+                <div class="dcard-head"><h2>Đơn hàng của tôi</h2><div class="filter-chips" data-ofilter></div></div>
+                <div data-orders><div class="acct-loading"><span class="spinner"></span> Đang tải đơn hàng…</div></div>
+              </div>
+            </section>
+            <section data-panel="thong-tin" hidden>
+              <form class="dcard acct-profile" data-profile novalidate>
+                <div class="dcard-head"><h2>Thông tin cá nhân</h2></div>
+                <div class="form-alert" data-pmsg hidden></div>
+                <div class="av-edit">
+                  <div class="acct-avatar av-sm" data-av></div>
+                  <div class="av-edit-body">
+                    <b>Ảnh đại diện</b>
+                    <span data-av-src></span>
+                    <div class="av-edit-btns">
+                      <button type="button" class="btn btn-ink btn-sm" data-av-pick>Tải ảnh lên</button>
+                      <button type="button" class="btn btn-outline btn-sm" data-av-adjust hidden>Căn chỉnh ảnh</button>
+                      <button type="button" class="btn btn-outline btn-sm" data-av-google hidden>Dùng ảnh Google</button>
+                      <button type="button" class="btn btn-outline btn-sm btn-g" data-av-link hidden><svg viewBox="0 0 48 48" width="16" height="16" aria-hidden="true"><path fill="#FFC107" d="M43.6 20.5H42V20H24v8h11.3C33.7 32.7 29.2 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.8 1.2 7.9 3l5.7-5.7C34 6.1 29.3 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20 20-8.9 20-20c0-1.3-.1-2.4-.4-3.5z"/><path fill="#FF3D00" d="m6.3 14.7 6.6 4.8C14.7 15.1 19 12 24 12c3.1 0 5.8 1.2 7.9 3l5.7-5.7C34 6.1 29.3 4 24 4 16.3 4 9.7 8.3 6.3 14.7z"/><path fill="#4CAF50" d="M24 44c5.2 0 9.9-2 13.4-5.2l-6.2-5.2C29.2 35.1 26.7 36 24 36c-5.2 0-9.6-3.3-11.3-8l-6.5 5C9.5 39.6 16.2 44 24 44z"/><path fill="#1976D2" d="M43.6 20.5H42V20H24v8h11.3c-.8 2.2-2.2 4.2-4.1 5.6l6.2 5.2C37 39.2 44 34 44 24c0-1.3-.1-2.4-.4-3.5z"/></svg> Lấy ảnh từ Google</button>
+                      <button type="button" class="auth-link" data-av-remove hidden>Xóa ảnh</button>
+                    </div>
+                  </div>
+                  <input type="file" accept="image/jpeg,image/png,image/webp,image/gif,image/*" data-av-file hidden>
+                </div>
+                <div class="form-2col">
+                  <label class="field" data-f="name"><span>Họ và tên</span><input name="name" maxlength="60" value="${N.esc(name)}"><span class="err">Vui lòng nhập họ tên.</span></label>
+                  <label class="field" data-f="phone"><span>Số điện thoại</span><input name="phone" type="tel" inputmode="tel" maxlength="15" value="${N.esc(prof.phone || "")}"><span class="err">Số điện thoại chưa đúng.</span></label>
+                </div>
+                <label class="field"><span>Địa chỉ giao hàng mặc định</span><input name="address" maxlength="160" value="${N.esc(prof.address || "")}" placeholder="Số nhà, tên đường, phường, TP.HCM"></label>
+                <label class="field"><span>Chi nhánh hay ghé</span>
+                  <select class="select" name="branch"><option value="">— Chọn chi nhánh —</option>${S.branches.map((b) => { const v = `${b.name} – ${b.address}`; return `<option value="${N.esc(v)}" ${prof.branch === v ? "selected" : ""}>${N.esc(b.name)}</option>`; }).join("")}</select>
+                </label>
+                <p class="dnote">Số điện thoại và địa chỉ được điền sẵn khi bạn đặt hàng.</p>
+                <button class="btn btn-lime" type="submit">Lưu thông tin</button>
+              </form>
+            </section>
+            <section data-panel="bao-mat" hidden>
+              <div class="dcard">
+                <div class="dcard-head"><h2>Bảo mật & đăng nhập</h2></div>
+                <div class="sec-rows">
+                  <div class="sec-row"><i>${IC2.chat}</i><div><b>Email</b><small>${N.esc(u.email || "")}</small></div>${u.emailVerified ? '<span class="st st-done">Đã xác thực</span>' : '<button type="button" class="btn btn-outline btn-sm" data-verify>Gửi lại email xác thực</button>'}</div>
+                  <div class="sec-row"><i><svg viewBox="0 0 48 48" width="20" height="20" aria-hidden="true"><path fill="#FFC107" d="M43.6 20.5H42V20H24v8h11.3C33.7 32.7 29.2 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.8 1.2 7.9 3l5.7-5.7C34 6.1 29.3 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20 20-8.9 20-20c0-1.3-.1-2.4-.4-3.5z"/><path fill="#FF3D00" d="m6.3 14.7 6.6 4.8C14.7 15.1 19 12 24 12c3.1 0 5.8 1.2 7.9 3l5.7-5.7C34 6.1 29.3 4 24 4 16.3 4 9.7 8.3 6.3 14.7z"/><path fill="#4CAF50" d="M24 44c5.2 0 9.9-2 13.4-5.2l-6.2-5.2C29.2 35.1 26.7 36 24 36c-5.2 0-9.6-3.3-11.3-8l-6.5 5C9.5 39.6 16.2 44 24 44z"/><path fill="#1976D2" d="M43.6 20.5H42V20H24v8h11.3c-.8 2.2-2.2 4.2-4.1 5.6l6.2 5.2C37 39.2 44 34 44 24c0-1.3-.1-2.4-.4-3.5z"/></svg></i><div><b>Đăng nhập bằng Google</b><small>${hasGoogle ? "Đã liên kết – có thể dùng nút “Đăng nhập với Google”" : "Chưa liên kết"}</small></div>${hasGoogle ? '<span class="st st-done">Đã liên kết</span>' : '<button type="button" class="btn btn-outline btn-sm" data-sec-link>Liên kết Google</button>'}</div>
                 </div>
               </div>
-              <input type="file" accept="image/jpeg,image/png,image/webp,image/gif,image/*" data-av-file hidden>
-            </div>
-            <label class="field" data-f="name"><span>Họ và tên</span><input name="name" maxlength="60" value="${N.esc(name)}"><span class="err">Vui lòng nhập họ tên.</span></label>
-            <label class="field" data-f="phone"><span>Số điện thoại</span><input name="phone" type="tel" inputmode="tel" maxlength="15" value="${N.esc(prof.phone || "")}"><span class="err">Số điện thoại chưa đúng.</span></label>
-            <label class="field"><span>Địa chỉ giao hàng mặc định</span><input name="address" maxlength="160" value="${N.esc(prof.address || "")}" placeholder="Số nhà, tên đường, phường, TP.HCM"></label>
-            <label class="field"><span>Chi nhánh hay ghé</span>
-              <select class="select" name="branch"><option value="">— Chọn chi nhánh —</option>${S.branches.map((b) => { const v = `${b.name} – ${b.address}`; return `<option value="${N.esc(v)}" ${prof.branch === v ? "selected" : ""}>${N.esc(b.name)}</option>`; }).join("")}</select>
-            </label>
-            <button class="btn btn-lime btn-block" type="submit">Lưu thông tin</button>
-            ${u.providerData.some((p) => p.providerId === "password")
-              ? '<button type="button" class="auth-link" data-pw-toggle style="margin-top:14px">Đổi mật khẩu</button>'
-              : '<p class="pw-google-note">Bạn đăng nhập bằng Google – mật khẩu do tài khoản Google quản lý.</p>'}
-            <div class="pw-box" data-pw-box hidden>
-              <div class="form-alert" data-pwmsg hidden></div>
-              <label class="field" data-f="cur"><span>Mật khẩu hiện tại</span><input name="cur" type="password" autocomplete="current-password"><span class="err">Vui lòng nhập mật khẩu hiện tại.</span></label>
-              <label class="field" data-f="npw"><span>Mật khẩu mới</span><input name="npw" type="password" autocomplete="new-password" placeholder="Ít nhất 6 ký tự"><span class="err">Mật khẩu mới cần ít nhất 6 ký tự.</span></label>
-              <label class="field" data-f="npw2"><span>Nhập lại mật khẩu mới</span><input name="npw2" type="password" autocomplete="new-password"><span class="err">Mật khẩu nhập lại không khớp.</span></label>
-              <button type="button" class="btn btn-ink btn-block" data-pw-save>Cập nhật mật khẩu</button>
-              <button type="button" class="auth-link" data-pw-forgot style="margin-top:12px">Quên mật khẩu hiện tại?</button>
-            </div>
-          </form>
-          <div class="co-card acct-orders" data-reveal="right">
-            <h2><span class="step">2</span> Đơn hàng của tôi</h2>
-            <div data-orders><div class="acct-loading"><span class="spinner"></span> Đang tải đơn hàng…</div></div>
+              ${isPw ? `
+              <form class="dcard" data-pwform novalidate>
+                <div class="dcard-head"><h2>Đổi mật khẩu</h2></div>
+                <div class="form-alert" data-pwmsg hidden></div>
+                <label class="field" data-f="cur"><span>Mật khẩu hiện tại</span><input name="cur" type="password" autocomplete="current-password"><span class="err">Vui lòng nhập mật khẩu hiện tại.</span></label>
+                <div class="form-2col">
+                  <label class="field" data-f="npw"><span>Mật khẩu mới</span><input name="npw" type="password" autocomplete="new-password" placeholder="Ít nhất 6 ký tự"><span class="err">Mật khẩu mới cần ít nhất 6 ký tự.</span></label>
+                  <label class="field" data-f="npw2"><span>Nhập lại mật khẩu mới</span><input name="npw2" type="password" autocomplete="new-password"><span class="err">Mật khẩu nhập lại không khớp.</span></label>
+                </div>
+                <div class="pw-actions"><button type="button" class="btn btn-ink" data-pw-save>Cập nhật mật khẩu</button><button type="button" class="auth-link" data-pw-forgot>Quên mật khẩu hiện tại?</button></div>
+              </form>` : `<div class="dcard"><p class="pw-google-note" style="margin:0">Bạn đăng nhập bằng Google – mật khẩu do tài khoản Google quản lý.</p></div>`}
+              <div class="dcard dcard-out"><div><b>Đăng xuất</b><small>Thoát khỏi tài khoản trên thiết bị này.</small></div><button type="button" class="btn btn-outline" data-signout>Đăng xuất</button></div>
+            </section>
           </div>
         </div>`;
       root.querySelectorAll("[data-reveal]").forEach((el) => N.anim([el], el.dataset.reveal, { stagger: false }));
@@ -236,7 +297,7 @@
       root.querySelector("[data-av-google]").addEventListener("click", () => clearPhoto("Đã chuyển về ảnh Google"));
       root.querySelector("[data-av-remove]").addEventListener("click", () => clearPhoto("Đã xóa ảnh đại diện"));
 
-      root.querySelector("[data-signout]").addEventListener("click", async () => { await api.signOut(); N.toast("Đã đăng xuất"); location.replace(N.HOME); });
+      root.querySelectorAll("[data-signout]").forEach((b) => b.addEventListener("click", async () => { await api.signOut(); N.toast("Đã đăng xuất"); location.replace(N.HOME); }));
       root.querySelector("[data-verify]")?.addEventListener("click", async (e) => { try { await u.sendEmailVerification(); e.target.textContent = "Đã gửi – kiểm tra hộp thư"; } catch (err) { N.toast(api.errorText(err)); } });
       /* change password directly (re-authenticate with the current password) */
       const pwBox = root.querySelector("[data-pw-box]");
@@ -244,7 +305,7 @@
       const pwMsg = root.querySelector("[data-pwmsg]");
       const showPw = (type, html) => { pwMsg.className = `form-alert ${type}`; pwMsg.innerHTML = html; pwMsg.hidden = false; };
       root.querySelector("[data-pw-save]")?.addEventListener("click", async (e) => {
-        const f = root.querySelector("[data-profile]");
+        const f = root.querySelector("[data-pwform]");
         const cur = f.cur.value, npw = f.npw.value;
         const set = (k, on) => { f.querySelector(`[data-f="${k}"]`).classList.toggle("has-error", on); return on; };
         if ([set("cur", !cur), set("npw", npw.length < 6), set("npw2", npw !== f.npw2.value)].some(Boolean)) return;
@@ -283,20 +344,122 @@
         } catch (err) { pmsg.className = "form-alert err"; pmsg.textContent = api.errorText(err); pmsg.hidden = false; }
       });
 
-      const box = root.querySelector("[data-orders]");
+      /* ---- tabs (hash: #don-hang, #thong-tin, #bao-mat) ---- */
+      const TABS = ["tong-quan", "don-hang", "thong-tin", "bao-mat"];
+      const setTab = (t, push) => {
+        if (!TABS.includes(t)) t = "tong-quan";
+        root.querySelectorAll("[data-tab]").forEach((b) => { const on = b.dataset.tab === t; b.classList.toggle("is-active", on); b.setAttribute("aria-current", on ? "page" : "false"); });
+        root.querySelectorAll("[data-panel]").forEach((p) => { p.hidden = p.dataset.panel !== t; });
+        const nav = root.querySelector(".dash-nav"), act = nav.querySelector(`[data-tab="${t}"]`);
+        if (nav.scrollWidth > nav.clientWidth && act) nav.scrollTo({ left: nav.scrollLeft + act.getBoundingClientRect().left - nav.getBoundingClientRect().left - nav.clientWidth / 2 + act.clientWidth / 2, behavior: push ? "smooth" : "auto" });
+        const pn = root.querySelector(`[data-panel="${t}"]`);
+        N.anim(pn.querySelectorAll(".dcard, .dquick > a"), "up");
+        if (push) history.replaceState(null, "", t === "tong-quan" ? location.pathname : `#${t}`);
+      };
+      root.addEventListener("click", (e) => {
+        const b = e.target.closest("[data-tab], [data-go]");
+        if (!b) return;
+        setTab(b.dataset.tab || b.dataset.go, true);
+        if (b.dataset.go || innerWidth < 900) root.querySelector(".dash").scrollIntoView({ behavior: "smooth", block: "start" });
+      });
+      setTab(location.hash.slice(1), false);
+      root.querySelector("[data-sec-link]")?.addEventListener("click", () => root.querySelector("[data-av-link]").click());
+
+      /* ---- orders: live from Firestore ---- */
+      const ACTIVE = ["pending", "confirmed", "making", "delivering"];
+      const steps = (o) => (o.delivery && o.delivery.method === "ship" ? ["pending", "confirmed", "making", "delivering", "done"] : ["pending", "confirmed", "making", "done"]);
+      const STEP_T = { pending: "Đặt", confirmed: "Xác nhận", making: "Pha chế", delivering: "Đang giao", done: "Xong" };
+      const tracker = (o) => {
+        if (o.status === "cancelled") return "";
+        const st = steps(o), idx = Math.max(0, st.indexOf(o.status));
+        return `<ol class="o-track" style="--p:${idx / (st.length - 1)};--n:${st.length}">${st.map((k, i) => `<li class="${i < idx ? "done" : i === idx ? "now" : ""}"><i></i><span>${STEP_T[k]}</span></li>`).join("")}</ol>`;
+      };
+      const thumbs = (o) => o.items.slice(0, 3).map((i) => { const p = N.byId[i.id]; return p ? `<img src="${N.img(p.img)}" alt="">` : ""; }).join("");
+      const orderCard = (o) => `
+        <article class="o-card ${(N.STATUS[o.status] || N.STATUS.pending)[1]}">
+          <div class="oc-top">
+            <div class="oc-thumbs">${thumbs(o)}</div>
+            <div class="oc-id"><b>${N.esc(o.code)}</b><small>${when(o)} · ${o.delivery.method === "ship" ? "Giao tận nơi" : "Nhận tại quán"}</small></div>
+            ${stBadge(o.status)}
+          </div>
+          <p class="oc-items">${o.items.map((i) => `${N.esc(i.name)} <b>×${i.qty}</b>`).join(" · ")}</p>
+          ${tracker(o)}
+          <div class="oc-foot">
+            <div class="oc-total"><small>${N.esc(o.payment || "")}</small><b>${N.esc(o.totalText)}</b></div>
+            <div class="oc-actions">
+              <a class="btn btn-outline btn-sm" href="dat-hang-thanh-cong.html?ma=${encodeURIComponent(o.code)}">Chi tiết</a>
+              <button type="button" class="btn btn-lime btn-sm" data-reorder="${N.esc(o.code)}">Đặt lại</button>
+              ${o.status === "pending" ? `<button type="button" class="btn btn-outline btn-sm btn-danger" data-cancel-order="${N.esc(o.code)}">Hủy đơn</button>` : ""}
+            </div>
+          </div>
+        </article>`;
+      let orders = [], ofilter = "all";
+      const OF = [["all", "Tất cả"], ["active", "Đang xử lý"], ["done", "Hoàn thành"], ["cancelled", "Đã hủy"]];
+      const renderOrders = () => {
+        const nActive = orders.filter((o) => ACTIVE.includes(o.status)).length;
+        const spent = orders.filter((o) => o.status !== "cancelled").reduce((s, o) => s + (o.totalAmount || 0), 0);
+        root.querySelector("[data-st-n]").textContent = orders.length;
+        root.querySelector("[data-st-spend]").textContent = N.fmtVND(spent);
+        root.querySelector("[data-st-active]").textContent = nActive;
+        const badge = root.querySelector("[data-n-orders]"); badge.hidden = !nActive; badge.textContent = nActive;
+        // overview: active orders
+        const act = orders.filter((o) => ACTIVE.includes(o.status));
+        root.querySelector("[data-active]").innerHTML = act.length ? act.map(orderCard).join("")
+          : `<div class="d-empty"><b>Không có đơn nào đang xử lý</b><span>Thèm một ly cà phê? Đặt trước, ghé lấy không cần chờ.</span><a class="btn btn-lime btn-sm" href="thuc-don.html">Đặt món ngay</a></div>`;
+        // favourite items (from non-cancelled orders), else featured suggestions
+        const tally = {};
+        orders.filter((o) => o.status !== "cancelled").forEach((o) => o.items.forEach((i) => { if (N.byId[i.id]) tally[i.id] = (tally[i.id] || 0) + i.qty; }));
+        let favs = Object.entries(tally).sort((a, b) => b[1] - a[1]).slice(0, 3).map(([id, n]) => [N.byId[id], `Bạn đã đặt ${n} lần`]);
+        root.querySelector("[data-fav-title]").textContent = favs.length ? "Món bạn hay đặt" : "Gợi ý cho bạn";
+        if (favs.length < 3) favs = favs.concat(N.PRODUCTS.filter((p) => p.featured && p.type === "drink" && !tally[p.id]).slice(0, 3 - favs.length).map((p) => [p, favs.length ? "Gợi ý thêm" : p.badge || p.cat]));
+        root.querySelector("[data-favs]").innerHTML = favs.map(([p, sub]) => `
+          <div class="fav${p.soldOut ? " is-out" : ""}">
+            <a href="${N.productUrl(p)}"><img src="${N.img(p.img)}" alt="${N.esc(p.name)}" loading="lazy"></a>
+            <div><b>${N.esc(p.name)}</b><small>${N.esc(sub)} · ${N.esc(N.priceText(p))}</small></div>
+            <button type="button" class="btn btn-lime btn-sm" data-add="${p.id}" ${p.soldOut ? "disabled" : ""}>${p.soldOut ? "Tạm hết" : "Đặt"}</button>
+          </div>`).join("");
+        // orders tab
+        root.querySelector("[data-ofilter]").innerHTML = OF.map(([k, t]) => {
+          const n = k === "all" ? orders.length : k === "active" ? nActive : orders.filter((o) => o.status === k).length;
+          return `<button type="button" class="fchip ${ofilter === k ? "is-active" : ""}" data-of="${k}">${t}<small>${n}</small></button>`;
+        }).join("");
+        const list = orders.filter((o) => ofilter === "all" || (ofilter === "active" ? ACTIVE.includes(o.status) : o.status === ofilter));
+        root.querySelector("[data-orders]").innerHTML = list.length ? `<div class="o-list">${list.map(orderCard).join("")}</div>`
+          : `<div class="d-empty"><b>${orders.length ? "Không có đơn nào ở mục này" : "Bạn chưa có đơn hàng nào"}</b><span>Đơn bạn đặt sẽ hiện ở đây, kèm trạng thái cập nhật trực tiếp.</span><a class="btn btn-lime btn-sm" href="thuc-don.html">Đặt món đầu tiên</a></div>`;
+      };
+      root.addEventListener("click", async (e) => {
+        const f = e.target.closest("[data-of]");
+        if (f) { ofilter = f.dataset.of; renderOrders(); return; }
+        const r = e.target.closest("[data-reorder]");
+        if (r) {
+          const o = orders.find((x) => x.code === r.dataset.reorder); if (!o) return;
+          let n = 0;
+          o.items.forEach((i) => {
+            const p = N.byId[i.id]; if (!p || p.soldOut) return;
+            const vals = (i.opts || "").split(" · "), opts = {};
+            Object.keys(p.options || {}).forEach((k) => { const v = vals.find((x) => p.options[k].includes(x)); if (v) opts[k] = v; });
+            N.cart.add(i.id, i.qty, opts, i.note || "", true); n++;
+          });
+          N.toast(n ? `Đã thêm ${n} món vào giỏ` : "Các món trong đơn này đang tạm hết");
+          if (n) N.open("cartDrawer");
+          return;
+        }
+        const c = e.target.closest("[data-cancel-order]");
+        if (c) {
+          if (!confirm(`Hủy đơn ${c.dataset.cancelOrder}?\nChỉ hủy được khi quán chưa xác nhận đơn.`)) return;
+          c.disabled = true;
+          try { await api.cancelOrder(c.dataset.cancelOrder); N.toast("Đã hủy đơn"); }
+          catch (err) { c.disabled = false; N.toast(err && err.code === "permission-denied" ? `Quán đã xác nhận đơn – vui lòng gọi ${S.phoneDisplay} để hủy.` : api.errorText(err)); }
+        }
+      });
+      const sortO = (list) => list.sort((a, b) => (b.createdAtLocal || "").localeCompare(a.createdAtLocal || ""));
       try {
-        const list = await api.myOrders();
-        box.innerHTML = list.length ? `<div class="acct-olist">${list.map((o) => `
-          <article class="acct-order">
-            <div class="ao-top"><b>${N.esc(o.code)}</b>${stBadge(o.status)}</div>
-            <p class="ao-meta">${when(o)} · ${o.items.reduce((s, i) => s + i.qty, 0)} món · ${o.delivery.method === "ship" ? "Giao tận nơi" : "Nhận tại quán"}</p>
-            <p class="ao-items">${o.items.map((i) => `${N.esc(i.name)} ×${i.qty}`).join(", ")}</p>
-            <div class="ao-foot"><span>${N.esc(o.payment)}</span><b>${N.esc(o.totalText)}</b></div>
-            ${o.status === "pending" ? `<div class="ao-act"><a class="auth-link" href="dat-hang-thanh-cong.html?ma=${encodeURIComponent(o.code)}">Chi tiết / Hủy đơn</a></div>` : ""}
-          </article>`).join("")}</div>`
-          : `<div class="cart-empty" style="padding:30px 10px"><p>Bạn chưa có đơn hàng nào.</p><a class="btn btn-lime" href="thuc-don.html">Đặt món đầu tiên</a></div>`;
-        N.anim(box.querySelectorAll(".acct-order"), "up");
-      } catch (err) { box.innerHTML = `<div class="form-alert err">${N.esc(api.errorText(err))}</div>`; }
+        api.db.collection("orders").where("uid", "==", u.uid).limit(100).onSnapshot(
+          (snap) => { orders = sortO(snap.docs.map((d) => d.data())); renderOrders(); },
+          async () => { orders = sortO(await api.myOrders().catch(() => [])); renderOrders(); },
+        );
+      } catch { orders = sortO(await api.myOrders().catch(() => [])); renderOrders(); }
+      document.addEventListener("nhan:shop", renderOrders);
     };
     render(api.user);
     document.addEventListener("nhan:user", (e) => { if (!e.detail) location.replace("dang-nhap.html?next=tai-khoan.html"); });

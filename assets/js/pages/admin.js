@@ -28,18 +28,55 @@
       return;
     }
 
-    let showDeleted = false; let orders = [], users = [], filter = "active", q = "", cq = "", csort = "new", firstLoad = true, view = location.hash === "#khach-hang" ? "customers" : location.hash === "#thuc-don" ? "menu" : "orders", autoAll = true;
+    let showDeleted = false; let orders = [], users = [], filter = "active", q = "", cq = "", csort = "new", firstLoad = true, autoAll = true;
+    const HASH = { "#don-hang": "orders", "#khach-hang": "customers", "#thuc-don": "menu" };
+    let view = HASH[location.hash] || "overview";
+    const aico = (d) => `<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${d}</svg>`;
+    const AI = {
+      chart: aico('<path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/>'),
+      bag: aico('<path d="M6 7h12l1 13H5z"/><path d="M9 7V5a3 3 0 0 1 6 0v2"/>'),
+      users: aico('<circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c1-3.5 3.6-5.5 6.5-5.5s5.5 2 6.5 5.5"/><path d="M16 4.5a3.5 3.5 0 0 1 0 7M18 14.6c1.8.8 3 2.6 3.5 5.4"/>'),
+      menu: aico('<path d="M5 8h12v6a5 5 0 0 1-5 5H10a5 5 0 0 1-5-5z"/><path d="M17 10h1.5a2.5 2.5 0 0 1 0 5H17"/><path d="M8 3v2M12 3v2"/>'),
+      shield: '<svg viewBox="0 0 24 24" width="30" height="30" aria-hidden="true"><path d="M12 3 5 6v5c0 4.4 3 8.3 7 9.5 4-1.2 7-5.1 7-9.5V6z" fill="currentColor"/><path d="m9 12 2 2 4-4" fill="none" stroke="#111" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+    };
+    const firstName = (u.displayName || "").trim().split(/\s+/)[0] || "Quản trị";
+    const todayLong = new Date().toLocaleDateString("vi-VN", { weekday: "long", day: "2-digit", month: "2-digit", year: "numeric" });
     root.innerHTML = `
-      <div class="admin-head" data-reveal="up">
-        <div><span class="kicker">Quản trị</span><h1>Bảng điều khiển</h1><p>Cập nhật theo thời gian thực · ${N.esc(u.email)} · <a class="auth-link" href="tai-khoan.html">Hồ sơ &amp; ảnh đại diện</a></p></div>
-        <label class="check"><input type="checkbox" data-sound checked><span>Âm báo khi có đơn mới</span></label>
-      </div>
-      <div class="admin-tabs" role="tablist">
-        <button role="tab" data-view="orders">Đơn hàng <small data-n-orders>0</small></button>
-        <button role="tab" data-view="customers">Khách hàng <small data-n-users>0</small></button>
-        <button role="tab" data-view="menu">Thực đơn <small data-n-out hidden></small></button>
-      </div>
-      <section data-pane="orders">
+      <section class="dash-hero adm-hero" data-reveal="up">
+        <div class="dh-inner">
+          <div class="adm-badge">${AI.shield}</div>
+          <div class="dh-text">
+            <span class="dh-kicker">Quản trị · Coffee Nhẫn To Go</span>
+            <h1>Chào ${N.esc(firstName)}!</h1>
+            <p><span class="dh-since">${todayLong.charAt(0).toUpperCase() + todayLong.slice(1)}</span><button type="button" class="shop-pill" data-shop-pill data-view="menu"></button><span class="dh-since">Cập nhật theo thời gian thực</span></p>
+          </div>
+          <div class="dh-actions">
+            <label class="check check-light"><input type="checkbox" data-sound checked><span>Âm báo đơn mới</span></label>
+            <a class="btn btn-outline-light btn-sm" href="tai-khoan.html">Hồ sơ &amp; ảnh</a>
+          </div>
+        </div>
+        <div class="dh-stats adm-stats" data-kpis></div>
+      </section>
+      <div class="dash">
+        <nav class="dash-nav" aria-label="Mục quản trị" data-reveal="left">
+          <button type="button" data-view="overview">${AI.chart}<span>Tổng quan</span></button>
+          <button type="button" data-view="orders">${AI.bag}<span>Đơn hàng</span><small data-n-orders>0</small></button>
+          <button type="button" data-view="customers">${AI.users}<span>Khách hàng</span><small class="muted" data-n-users>0</small></button>
+          <button type="button" data-view="menu">${AI.menu}<span>Thực đơn</span><small class="warn" data-n-out hidden></small></button>
+        </nav>
+        <div class="dash-main">
+      <section data-pane="overview">
+        <div data-ov-alert></div>
+        <div class="dcard">
+          <div class="dcard-head"><h2>Doanh thu 7 ngày qua</h2><span class="dmeta" data-ov-total></span></div>
+          <div class="rev-chart" data-ov-chart></div>
+        </div>
+        <div class="ov-grid">
+          <div class="dcard"><div class="dcard-head"><h2>Món bán chạy · 7 ngày</h2></div><div data-ov-top></div></div>
+          <div class="dcard"><div class="dcard-head"><h2>Đơn mới nhất</h2><button type="button" class="dlink" data-go-orders>Tất cả đơn →</button></div><div data-ov-latest></div></div>
+        </div>
+      </section>
+      <section data-pane="orders" hidden>
         <div class="admin-stats" data-stats></div>
         <div class="toolbar">
           <div class="filter-chips" data-filters></div>
@@ -73,7 +110,9 @@
           <button class="btn btn-lime" type="button" data-msave>Lưu giá</button>
           <button class="btn btn-outline" type="button" data-mreset>Khôi phục toàn bộ giá gốc</button>
         </div>
-      </section>`;
+      </section>
+        </div>
+      </div>`;
     const $ = (s) => root.querySelector(s);
     N.anim(root.querySelectorAll("[data-reveal]"), "up", { stagger: false });
 
@@ -81,13 +120,17 @@
       view = v;
       root.querySelectorAll("[data-view]").forEach((b) => { const on = b.dataset.view === v; b.classList.toggle("is-active", on); b.setAttribute("aria-selected", on); });
       root.querySelectorAll("[data-pane]").forEach((p) => (p.hidden = p.dataset.pane !== v));
-      history.replaceState(null, "", v === "customers" ? "#khach-hang" : v === "menu" ? "#thuc-don" : location.pathname);
+      history.replaceState(null, "", v === "orders" ? "#don-hang" : v === "customers" ? "#khach-hang" : v === "menu" ? "#thuc-don" : location.pathname);
+      const nav = root.querySelector(".dash-nav"), act = nav && nav.querySelector(`[data-view="${v}"]`);
+      if (nav && act && nav.scrollWidth > nav.clientWidth) nav.scrollTo({ left: nav.scrollLeft + act.getBoundingClientRect().left - nav.getBoundingClientRect().left - nav.clientWidth / 2 + act.clientWidth / 2 });
+      const pane = root.querySelector(`[data-pane="${v}"]`); if (pane) N.anim(pane.querySelectorAll(".dcard, .stat, .ov-alert"), "up");
     };
     root.addEventListener("click", (e) => { const b = e.target.closest("[data-view]"); if (b) setView(b.dataset.view); });
     setView(view);
 
     /* ---------------- orders ---------------- */
     const FILTERS = [["active", "Cần xử lý"], ["pending", "Mới"], ["confirmed", "Đã xác nhận"], ["making", "Đang pha"], ["delivering", "Đang giao"], ["done", "Hoàn thành"], ["cancelled", "Đã hủy"], ["all", "Tất cả"]];
+    const nextOf = (o) => ({ pending: ["confirmed", "Xác nhận đơn"], confirmed: ["making", "Bắt đầu pha"], making: o.delivery && o.delivery.method === "ship" ? ["delivering", "Giao hàng"] : ["done", "Hoàn thành"], delivering: ["done", "Đã giao xong"] })[o.status];
     const isActive = (o) => !["done", "cancelled"].includes(o.status);
     function beep() {
       if (!$("[data-sound]").checked) return;
@@ -98,7 +141,7 @@
       if (autoAll && !orders.some(isActive) && orders.length) filter = "all";
       const todays = orders.filter((o) => sameDay(dateOf(o), today));
       const revenue = todays.filter((o) => o.status !== "cancelled").reduce((s, o) => s + (o.totalAmount || 0), 0);
-      $("[data-n-orders]").textContent = orders.length;
+      { const na = orders.filter(isActive).length, bn = $("[data-n-orders]"); bn.textContent = na; bn.hidden = !na; }
       $("[data-stats]").innerHTML = [
         ["Đơn hôm nay", todays.length], ["Cần xử lý", orders.filter(isActive).length],
         ["Doanh thu hôm nay", N.fmtVND(revenue)], ["Tổng đơn", orders.length],
@@ -129,6 +172,7 @@
             <div class="ad-actions">
               <button class="btn btn-outline btn-sm" type="button" data-print="${N.esc(o.code)}">In phiếu</button>
               <a class="btn btn-outline btn-sm" href="https://zalo.me/${N.esc(o.customer.phone)}" target="_blank" rel="noopener">Zalo khách</a>
+              ${nextOf(o) ? `<button type="button" class="btn btn-lime btn-sm ad-next" data-next="${N.esc(o.code)}" data-to="${nextOf(o)[0]}">${nextOf(o)[1]} →</button>` : ""}
               <select class="select ad-status" data-code="${N.esc(o.code)}">${Object.entries(STATUS).map(([k, [t]]) => `<option value="${k}" ${o.status === k ? "selected" : ""}>${t}</option>`).join("")}</select>
             </div>
           </div>
@@ -137,6 +181,12 @@
     }
     root.addEventListener("click", (e) => { const c = e.target.closest("[data-f]"); if (c && c.closest("[data-filters]")) { filter = c.dataset.f; autoAll = false; renderOrders(); } });
     $("[data-q]").addEventListener("input", (e) => { q = e.target.value; renderOrders(); });
+    root.addEventListener("click", async (e) => {
+      const b = e.target.closest("[data-next]"); if (!b) return;
+      b.disabled = true;
+      try { await api.db.collection("orders").doc(b.dataset.next).update({ status: b.dataset.to, updatedAt: api.firebase.firestore.FieldValue.serverTimestamp() }); N.toast(`Đơn ${b.dataset.next}: ${STATUS[b.dataset.to][0]}`); }
+      catch (err) { b.disabled = false; N.toast(api.errorText(err)); }
+    });
     root.addEventListener("change", async (e) => {
       const s = e.target.closest(".ad-status"); if (!s) return;
       try { await api.db.collection("orders").doc(s.dataset.code).update({ status: s.value, updatedAt: api.firebase.firestore.FieldValue.serverTimestamp() }); N.toast(`Đơn ${s.dataset.code}: ${STATUS[s.value][0]}`); }
@@ -357,8 +407,105 @@
       const next = curShop(); next.note = e.target.value.trim().slice(0, 140);
       await saveShop(next, "Đã lưu lời nhắn");
     });
-    document.addEventListener("nhan:shop", () => renderMenu());
+    document.addEventListener("nhan:shop", () => { renderMenu(); updateShopPill(); });
     renderMenu(true);
+
+    /* ---------------- overview: KPIs, 7-day revenue chart, top items, latest orders ---------------- */
+    const WD = ["CN", "T2", "T3", "T4", "T5", "T6", "T7"];
+    const dayKey = (d) => `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
+    const amount = (o) => (o.status === "cancelled" ? 0 : o.totalAmount || 0);
+    const STATUS_ICON = {};
+    function renderOverview() {
+      const now = new Date(), today = dayKey(now), yd = new Date(now - 864e5);
+      const days = [...Array(7)].map((_, i) => { const d = new Date(now); d.setHours(0, 0, 0, 0); d.setDate(d.getDate() - (6 - i)); return { d, key: dayKey(d), rev: 0, n: 0 }; });
+      const byKey = Object.fromEntries(days.map((x) => [x.key, x]));
+      const top = {};
+      orders.forEach((o) => {
+        const d = dateOf(o), b = byKey[dayKey(d)];
+        if (!b) return;
+        if (o.status !== "cancelled") { b.rev += amount(o); b.n++; o.items.forEach((i) => { top[i.name] = (top[i.name] || 0) + i.qty; }); }
+      });
+      const tRev = byKey[today].rev, yRev = orders.filter((o) => dayKey(dateOf(o)) === dayKey(yd)).reduce((s, o) => s + amount(o), 0);
+      const todays = orders.filter((o) => dayKey(dateOf(o)) === today);
+      const active = orders.filter(isActive).length, pending = orders.filter((o) => o.status === "pending").length;
+      const ADM = (N.ADMIN_EMAILS || []).map((e) => e.toLowerCase());
+      const newCust = users.filter((x) => !x.deleted && x.id !== u.uid && !ADM.includes((x.email || "").toLowerCase()) && daysAgo(toDate(x.createdAt), 7)).length;
+      const delta = yRev ? Math.round(((tRev - yRev) / yRev) * 100) : null;
+      $("[data-kpis]").innerHTML = [
+        ["Doanh thu hôm nay", N.fmtVND(tRev), delta == null ? "Hôm qua: " + N.fmtVND(yRev) : `${delta >= 0 ? "▲" : "▼"} ${Math.abs(delta)}% so với hôm qua`],
+        ["Đơn hôm nay", todays.length, `${todays.filter((o) => o.status === "cancelled").length} đơn đã hủy`],
+        ["Cần xử lý", active, pending ? `${pending} đơn mới chờ xác nhận` : "Không có đơn mới"],
+        ["Khách mới · 7 ngày", newCust, `${users.filter((x) => !x.deleted).length} tài khoản`],
+      ].map(([k, v, s]) => `<div><span>${k}</span><b>${v}</b><small>${s}</small></div>`).join("");
+      // alert for new orders
+      $("[data-ov-alert]").innerHTML = pending
+        ? `<div class="ov-alert"><span class="ova-dot" aria-hidden="true"></span><div><b>Có ${pending} đơn mới đang chờ xác nhận</b><small>Khách đang đợi – bấm để xử lý ngay.</small></div><button type="button" class="btn btn-lime btn-sm" data-go-orders data-f-go="pending">Xử lý ngay →</button></div>` : "";
+      // 7-day revenue bar chart (single series, SVG, hover tooltip + hidden table)
+      const W = 700, H = 230, padL = 8, padR = 8, padT = 26, padB = 44, gap = 18;
+      const max = Math.max(...days.map((x) => x.rev));
+      const nice = max <= 0 ? 100000 : (() => { const p = 10 ** Math.floor(Math.log10(max)); return Math.ceil(max / p) * p; })();
+      const bw = (W - padL - padR - gap * 6) / 7, ch = H - padT - padB;
+      const short = (v) => (v >= 1e6 ? `${(v / 1e6).toFixed(v % 1e6 ? 1 : 0).replace(".", ",")}tr` : v >= 1000 ? `${Math.round(v / 1000)}k` : `${v}`);
+      const grid = [0, 0.5, 1].map((f) => { const y = padT + ch * (1 - f); return `<line x1="${padL}" x2="${W - padR}" y1="${y}" y2="${y}" class="rc-grid"/><text x="${W - padR}" y="${y - 5}" class="rc-axis" text-anchor="end">${short(nice * f)}</text>`; }).join("");
+      const bars = days.map((x, i) => {
+        const h = x.rev ? Math.max(4, (x.rev / nice) * ch) : 0, X = padL + i * (bw + gap), Y = padT + ch - h, isT = x.key === today;
+        const label = `${WD[x.d.getDay()]} ${x.d.getDate()}/${x.d.getMonth() + 1}`;
+        const showVal = x.rev && (isT || x.rev === max);
+        return `<g class="rc-bar${isT ? " is-today" : ""}" data-tip="${N.esc(`${isT ? "Hôm nay" : label}: ${N.fmtVND(x.rev)} · ${x.n} đơn`)}">
+          <rect class="rc-hit" x="${X - gap / 2}" y="${padT}" width="${bw + gap}" height="${ch + padB}" />
+          ${h ? `<path d="M${X},${padT + ch} V${Y + 4} Q${X},${Y} ${X + 4},${Y} H${X + bw - 4} Q${X + bw},${Y} ${X + bw},${Y + 4} V${padT + ch} Z" class="rc-fill"/>` : `<line x1="${X}" x2="${X + bw}" y1="${padT + ch}" y2="${padT + ch}" class="rc-zero"/>`}
+          ${showVal ? `<text x="${X + bw / 2}" y="${Y - 8}" text-anchor="middle" class="rc-val">${short(x.rev)}</text>` : ""}
+          <text x="${X + bw / 2}" y="${H - 22}" text-anchor="middle" class="rc-day">${isT ? "Hôm nay" : WD[x.d.getDay()]}</text>
+          <text x="${X + bw / 2}" y="${H - 6}" text-anchor="middle" class="rc-date">${x.d.getDate()}/${x.d.getMonth() + 1}</text>
+        </g>`;
+      }).join("");
+      const total7 = days.reduce((s, x) => s + x.rev, 0), n7 = days.reduce((s, x) => s + x.n, 0);
+      $("[data-ov-total]").innerHTML = `Tổng 7 ngày: <b>${N.fmtVND(total7)}</b> · ${n7} đơn`;
+      $("[data-ov-chart]").innerHTML = `
+        <svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Doanh thu 7 ngày qua, tổng ${N.fmtVND(total7)}">${grid}${bars}<line x1="${padL}" x2="${W - padR}" y1="${padT + ch}" y2="${padT + ch}" class="rc-base"/></svg>
+        <div class="rc-tip" data-rc-tip hidden></div>
+        <table class="sr-only"><caption>Doanh thu theo ngày</caption><tr><th>Ngày</th><th>Doanh thu</th><th>Số đơn</th></tr>${days.map((x) => `<tr><td>${x.d.toLocaleDateString("vi-VN")}</td><td>${N.fmtVND(x.rev)}</td><td>${x.n}</td></tr>`).join("")}</table>
+        ${total7 ? "" : '<p class="rc-empty">Chưa có doanh thu trong 7 ngày qua – biểu đồ sẽ tự cập nhật khi có đơn.</p>'}`;
+      // top items (7 days)
+      const topList = Object.entries(top).sort((a, b) => b[1] - a[1]).slice(0, 5), tmax = topList.length ? topList[0][1] : 1;
+      $("[data-ov-top]").innerHTML = topList.length ? `<ol class="top-items">${topList.map(([name, n], i) => {
+        const p = N.PRODUCTS.find((x) => x.name === name);
+        return `<li><span class="ti-rank">${i + 1}</span>${p ? `<img src="${N.img(p.img)}" alt="">` : ""}<div><b>${N.esc(name)}</b><span class="ti-bar"><i style="width:${Math.max(6, (n / tmax) * 100)}%"></i></span></div><em>${n} ly</em></li>`;
+      }).join("")}</ol>` : '<div class="d-empty"><b>Chưa có dữ liệu</b><span>Món bán chạy sẽ hiện khi có đơn trong 7 ngày qua.</span></div>';
+      // latest orders
+      const latest = orders.slice(0, 5);
+      $("[data-ov-latest]").innerHTML = latest.length ? `<ul class="latest">${latest.map((o) => {
+        const [st, cls] = STATUS[o.status] || STATUS.pending;
+        return `<li><button type="button" data-open-order="${N.esc(o.code)}"><span class="lt-ic ${cls}" aria-hidden="true">${STATUS_ICON[o.status] || "●"}</span><span class="lt-main"><b>${N.esc(o.customer.name)}</b><small>${N.esc(o.code)} · ${ago(dateOf(o))}</small></span><span class="lt-end"><b>${N.esc(o.totalText)}</b><span class="st ${cls}">${st}</span></span></button></li>`;
+      }).join("")}</ul>` : '<div class="d-empty"><b>Chưa có đơn hàng</b><span>Đơn mới sẽ hiện ở đây kèm âm báo.</span></div>';
+      updateShopPill();
+    }
+    const updateShopPill = () => {
+      const p = $("[data-shop-pill]"); if (!p) return;
+      p.className = `shop-pill ${N.shop.open ? "is-open" : "is-off"}`;
+      p.innerHTML = `<i aria-hidden="true"></i>${N.shop.open ? "Đang nhận đơn online" : "Đang tạm ngưng nhận đơn"}`;
+    };
+    // chart tooltip
+    root.addEventListener("mouseover", (e) => {
+      const g = e.target.closest(".rc-bar"), tip = $("[data-rc-tip]");
+      if (!tip) return;
+      if (!g) { tip.hidden = true; return; }
+      const box = $("[data-ov-chart]").getBoundingClientRect(), r = g.querySelector(".rc-fill, .rc-zero").getBoundingClientRect();
+      tip.textContent = g.dataset.tip; tip.hidden = false;
+      tip.style.left = `${r.left - box.left + r.width / 2}px`; tip.style.top = `${r.top - box.top - 10}px`;
+    });
+    root.addEventListener("mouseleave", () => { const t = $("[data-rc-tip]"); if (t) t.hidden = true; }, true);
+    // jump to orders (optionally a filter or a specific order)
+    root.addEventListener("click", (e) => {
+      const go = e.target.closest("[data-go-orders]"), one = e.target.closest("[data-open-order]");
+      if (!go && !one) return;
+      if (go && go.dataset.fGo) { filter = go.dataset.fGo; autoAll = false; }
+      if (one) { filter = "all"; autoAll = false; q = one.dataset.openOrder; $("[data-q]").value = q; }
+      setView("orders"); renderOrders();
+      root.querySelector(".dash").scrollIntoView({ behavior: "smooth", block: "start" });
+    });
+
+    renderOverview();
 
     /* ---------------- realtime data ---------------- */
     api.db.collection("orders").orderBy("createdAt", "desc").limit(500).onSnapshot((snap) => {
@@ -367,11 +514,11 @@
       orders = snap.docs.map((d) => d.data());
       if (!firstLoad && added) { beep(); N.toast(`Có ${added} đơn mới!`); }
       firstLoad = false;
-      renderOrders(); renderUsers();
+      renderOrders(); renderUsers(); renderOverview();
     }, (err) => { $("[data-list]").innerHTML = `<div class="form-alert err">${N.esc(api.errorText(err))}</div>`; });
     api.db.collection("users").limit(1000).onSnapshot((snap) => {
       users = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
-      renderUsers();
+      renderUsers(); renderOverview();
     }, (err) => { $("[data-ulist]").innerHTML = `<div class="form-alert err">${N.esc(api.errorText(err))}</div>`; });
   });
 })();
