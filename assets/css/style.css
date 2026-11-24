@@ -1433,3 +1433,4 @@ img.img-ready { opacity: 1; transition: opacity .7s ease; }
 .av-edit-btns .btn-sm { min-height: 40px; }
 .av-edit-btns button:disabled { opacity: .55; pointer-events: none; }
 @media (max-width: 480px) { .av-edit { align-items: flex-start; } .acct-avatar.av-sm { width: 52px; height: 52px; font-size: 22px; } }
+.av-edit-btns .btn-g { display: inline-flex; align-items: center; gap: 8px; background: #fff; }

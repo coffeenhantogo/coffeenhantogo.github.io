@@ -35,6 +35,9 @@
     "auth/operation-not-allowed": "Phương thức đăng nhập này chưa được bật trong Firebase.",
     "auth/requires-recent-login": "Vui lòng đăng nhập lại để thực hiện thao tác này.",
     "permission-denied": "Bạn không có quyền thực hiện thao tác này.",
+    "auth/credential-already-in-use": "Tài khoản Google này đã được dùng cho một tài khoản khác tại Nhẫn. Hãy chọn đúng Gmail của bạn.",
+    "auth/provider-already-linked": "Tài khoản đã được liên kết Google.",
+    "auth/user-mismatch": "Bạn đã chọn một tài khoản Google khác với tài khoản đã liên kết.",
     "nhan/banned": "Tài khoản này đã bị khóa do vi phạm chính sách. Vui lòng liên hệ 0909.637.168 nếu có nhầm lẫn.",
     "nhan/not-registered": "Gmail này chưa đăng ký tài khoản tại Nhẫn. Hãy chuyển sang tab <b>Đăng ký</b> để tạo tài khoản.",
   };
@@ -140,6 +143,23 @@
           await db.collection("users").doc(api.user.uid).set({ photo: dataUrl || FV.delete(), photoUpdatedAt: ts() }, { merge: true });
           setCustomPhoto(dataUrl || null);
         },
+        /* link a Google account to an email/password account (to use its profile photo, and
+           to allow "Đăng nhập với Google" afterwards). Returns the Google photo URL. */
+        async linkGoogle() {
+          const u = api.user;
+          if (!u) throw new Error("not signed in");
+          const p = new fb.auth.GoogleAuthProvider();
+          p.setCustomParameters({ prompt: "select_account", login_hint: u.email || "" });
+          const linked = (u.providerData || []).some((x) => x.providerId === "google.com");
+          const cred = linked ? await u.reauthenticateWithPopup(p) : await u.linkWithPopup(p);
+          const gp = (cred.additionalUserInfo && cred.additionalUserInfo.profile && cred.additionalUserInfo.profile.picture)
+            || ((cred.user.providerData || []).find((x) => x.providerId === "google.com") || {}).photoURL || "";
+          if (gp && gp !== u.photoURL) await u.updateProfile({ photoURL: gp });
+          await u.reload();
+          api.user = auth.currentUser;
+          if (gp) await db.collection("users").doc(u.uid).set({ photoURL: gp, provider: "google.com" }, { merge: true }).catch(() => {});
+          return gp;
+        },
         async myOrders() {
           if (!api.user) return [];
           const qs = await db.collection("orders").where("uid", "==", api.user.uid).limit(100).get();
@@ -159,7 +179,8 @@
           }
           const provider = (u.providerData[0] && u.providerData[0].providerId) || "password";
           const data = { email: u.email || "", provider, lastLoginAt: ts(), loginCount: fb.firestore.FieldValue.increment(1) };
-          if (u.photoURL) data.photoURL = u.photoURL; // Google profile photo, shown in the admin customer list
+          const gp = N.googlePhoto ? N.googlePhoto(u) : u.photoURL;
+          if (gp) data.photoURL = gp; // Google profile photo, shown in the admin customer list
           if (!snap.exists) Object.assign(data, { name: u.displayName || "", phone: "", createdAt: u.metadata && u.metadata.creationTime ? fb.firestore.Timestamp.fromDate(new Date(u.metadata.creationTime)) : ts() });
           else if (!snap.data().name && u.displayName) data.name = u.displayName;
           // count at most once per browser session
