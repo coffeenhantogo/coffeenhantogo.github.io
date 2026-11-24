@@ -21,6 +21,7 @@ service cloud.firestore {
     // members can read their own orders; only the admin can list all and change status.
     match /orders/{code} {
       allow create: if signedIn()
+        && request.auth.token.email_verified == true
         && request.resource.data.uid == request.auth.uid
         && request.resource.data.keys().hasAll(['code', 'customer', 'items', 'delivery', 'payment'])
         && request.resource.data.code == code

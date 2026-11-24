@@ -43,8 +43,63 @@
 
   N.fbReady.then((api) => {
     if (!api) { N.requireConfig(root); return; }
-    if (api.user) { location.replace(next); return; }
-    const done = () => { N.toast("Đăng nhập thành công!"); setTimeout(() => location.replace(next), 500); };
+    const needsVerify = (u) => u && !u.emailVerified && u.providerData.some((p) => p.providerId === "password");
+
+    /* "activate your account" screen for unverified email/password accounts */
+    function showVerify(u, justRegistered) {
+      const email = u.email || "";
+      const webmail = /@gmail\.com$/i.test(email) ? "https://mail.google.com/mail/u/0/#search/from%3Anoreply%40coffeenhantogo" : null;
+      root.innerHTML = `
+        <div class="verify-box">
+          <div class="verify-ic"><svg viewBox="0 0 24 24" width="38" height="38" aria-hidden="true"><path d="M3 6h18v12H3z" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="m3 7 9 6 9-6" fill="none" stroke="currentColor" stroke-width="1.8"/></svg></div>
+          <h2>${justRegistered ? "Kích hoạt tài khoản" : "Tài khoản chưa được kích hoạt"}</h2>
+          <p>Nhẫn đã gửi email xác nhận tới<br><b>${N.esc(email)}</b></p>
+          <ol class="verify-steps">
+            <li>Mở hộp thư email trên (kiểm tra cả mục <b>Spam / Quảng cáo</b>).</li>
+            <li>Bấm nút <b>“Xác thực email”</b> trong thư từ Coffee Nhẫn To Go.</li>
+            <li>Quay lại đây – trang sẽ tự chuyển tiếp khi bạn đã xác nhận.</li>
+          </ol>
+          <div class="form-alert" data-vmsg hidden></div>
+          <div class="verify-actions">
+            ${webmail ? `<a class="btn btn-lime btn-block" href="${webmail}" target="_blank" rel="noopener">Mở Gmail</a>` : ""}
+            <button type="button" class="btn ${webmail ? "btn-ink" : "btn-lime"} btn-block" data-vcheck>Tôi đã xác nhận</button>
+            <button type="button" class="btn btn-outline btn-block" data-vresend>Gửi lại email</button>
+          </div>
+          <p class="auth-foot">Nhập sai email? <button type="button" class="auth-link" data-vout>Đăng ký bằng email khác</button></p>
+        </div>`;
+      const msg = root.querySelector("[data-vmsg]");
+      const say = (t, h) => { msg.className = `form-alert ${t}`; msg.innerHTML = h; msg.hidden = false; };
+      let stopped = false;
+      const check = async (manual) => {
+        try {
+          await u.reload();
+          if (api.auth.currentUser && api.auth.currentUser.emailVerified) {
+            stopped = true;
+            await api.auth.currentUser.getIdToken(true); // refresh token so the database sees email_verified
+            N.toast("Đã kích hoạt tài khoản!");
+            setTimeout(() => location.replace(next), 500);
+          } else if (manual) say("warn", "Chưa thấy xác nhận. Hãy bấm link trong email rồi thử lại sau vài giây.");
+        } catch (err) { if (manual) say("err", api.errorText(err)); }
+      };
+      root.querySelector("[data-vcheck]").addEventListener("click", () => check(true));
+      root.querySelector("[data-vresend]").addEventListener("click", async (e) => {
+        const b = e.currentTarget;
+        try { await u.sendEmailVerification({ url: (N.SITE_URL || location.origin + "/") + "dang-nhap.html" }); say("ok", "Đã gửi lại email xác nhận. Dùng <b>email mới nhất</b>."); b.disabled = true; setTimeout(() => (b.disabled = false), 60000); }
+        catch (err) { say("err", api.errorText(err)); }
+      });
+      root.querySelector("[data-vout]").addEventListener("click", async () => { stopped = true; await api.signOut(); location.replace("dang-nhap.html?tab=register"); });
+      // auto-detect verification done in another tab
+      const tick = () => { if (!stopped && !document.hidden) check(false); };
+      setInterval(tick, 4000);
+      addEventListener("focus", tick);
+    }
+
+    if (api.user) { needsVerify(api.user) ? showVerify(api.user, false) : location.replace(next); return; }
+    const done = () => {
+      const u = api.auth.currentUser;
+      if (needsVerify(u)) { showVerify(u, false); return; }
+      N.toast("Đăng nhập thành công!"); setTimeout(() => location.replace(next), 500);
+    };
 
     root.querySelector("[data-google]").addEventListener("click", async () => {
       hideMsg();
@@ -73,10 +128,9 @@
       if (bad.some(Boolean) || !f.agree.checked) { show("err", "Vui lòng kiểm tra lại các thông tin được đánh dấu."); return; }
       busy(f, true, "Đang tạo tài khoản…");
       try {
-        await api.signUp({ name, phone, email, password: pw });
+        const nu = await api.signUp({ name, phone, email, password: pw });
         N.store.set("nhan-customer-v1", { ...N.store.get("nhan-customer-v1", {}), name, phone, email });
-        N.toast("Tạo tài khoản thành công! Kiểm tra email để xác thực.");
-        setTimeout(() => location.replace(next), 700);
+        showVerify(nu, true);
       } catch (err) { show("err", api.errorText(err)); busy(f, false); }
     });
 

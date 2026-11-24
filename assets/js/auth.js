@@ -56,7 +56,7 @@
           const cred = await auth.createUserWithEmailAndPassword(email.trim(), password);
           await cred.user.updateProfile({ displayName: name });
           await db.collection("users").doc(cred.user.uid).set({ name, phone, email: email.trim(), createdAt: ts() }, { merge: true });
-          try { await cred.user.sendEmailVerification(); } catch { /* not fatal */ }
+          try { await cred.user.sendEmailVerification({ url: (N.SITE_URL || location.origin + "/") + "dang-nhap.html" }); } catch { /* not fatal */ }
           return cred.user;
         },
         async google() {

@@ -33,6 +33,17 @@
     document.addEventListener("nhan:user", (e) => { if (e.detail) location.reload(); });
     return;
   }
+  if (!ACCT.user.emailVerified && ACCT.user.providerData.some((p) => p.providerId === "password")) {
+    root.innerHTML = `
+      <div class="co-card login-gate" data-reveal="zoom">
+        <div class="cart-empty-ic">${N.IC.mail.replace("<svg", '<svg width="34" height="34"')}</div>
+        <h2>Kích hoạt tài khoản để đặt hàng</h2>
+        <p>Vui lòng xác nhận email <b>${N.esc(ACCT.user.email)}</b> – bấm nút “Xác thực email” trong thư Nhẫn đã gửi. Giỏ hàng của bạn vẫn được giữ.</p>
+        <div class="success-actions"><a class="btn btn-lime" href="dang-nhap.html?next=thanh-toan.html">Kích hoạt ngay</a></div>
+      </div>`;
+    N.anim(root.querySelectorAll("[data-reveal]"), "zoom", { stagger: false });
+    return;
+  }
 
   const prof = N.store.get(PROFILE_KEY, {});
   const today = new Date();

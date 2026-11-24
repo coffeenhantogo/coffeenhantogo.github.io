@@ -1351,3 +1351,11 @@ img.img-ready { opacity: 1; transition: opacity .7s ease; }
 .pw-box { margin-top: 16px; padding-top: 16px; border-top: 1px dashed var(--latte); animation: pageIn .4s var(--ease) both; }
 .pw-google-note { margin-top: 14px; font-size: 13.5px; color: var(--muted); }
 
+
+/* account activation screen */
+.verify-box { text-align: center; animation: pageIn .45s var(--ease) both; }
+.verify-ic { width: 76px; height: 76px; margin: 0 auto 16px; border-radius: 50%; display: grid; place-items: center; background: var(--lime-soft); color: var(--lime-deep); animation: pop .6s var(--ease); }
+.verify-box h2 { font-family: var(--font-display); font-size: 26px; font-weight: 800; color: var(--brown); }
+.verify-box > p { margin-top: 8px; color: #6d5446; line-height: 1.6; }
+.verify-steps { text-align: left; margin: 18px 0; padding: 16px 18px 16px 36px; border-radius: 14px; background: var(--crema); color: #6d5446; font-size: 14.5px; line-height: 1.6; display: grid; gap: 4px; }
+.verify-actions { display: grid; gap: 10px; }
