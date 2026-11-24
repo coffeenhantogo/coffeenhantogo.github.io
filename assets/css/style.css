@@ -1418,3 +1418,18 @@ img.img-ready { opacity: 1; transition: opacity .7s ease; }
 .acct-avatar > img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
 .ct-av { position: relative; overflow: hidden; }
 .ct-av > img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; border-radius: inherit; }
+
+/* account page: avatar upload */
+.acct-av-wrap { position: relative; flex-shrink: 0; }
+.acct-av-cam { position: absolute; right: -2px; bottom: -2px; width: 34px; height: 34px; border-radius: 50%; display: grid; place-items: center; background: var(--lime); color: var(--ink); border: 3px solid #fff; cursor: pointer; box-shadow: 0 4px 12px rgba(17,17,17,.18); transition: transform .25s var(--ease), background .2s; }
+.acct-av-cam:hover { transform: scale(1.08); background: var(--lime-dark); }
+.acct-av-cam:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+.av-edit { display: flex; align-items: center; gap: 16px; padding: 14px; margin-bottom: 16px; border: 1px dashed var(--latte); border-radius: 16px; background: var(--crema); }
+.acct-avatar.av-sm { width: 64px; height: 64px; font-size: 26px; }
+.av-edit-body { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.av-edit-body > b { color: var(--brown); font-weight: 800; }
+.av-edit-body > span { font-size: 13px; color: var(--muted); }
+.av-edit-btns { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; margin-top: 6px; }
+.av-edit-btns .btn-sm { min-height: 40px; }
+.av-edit-btns button:disabled { opacity: .55; pointer-events: none; }
+@media (max-width: 480px) { .av-edit { align-items: flex-start; } .acct-avatar.av-sm { width: 52px; height: 52px; font-size: 22px; } }

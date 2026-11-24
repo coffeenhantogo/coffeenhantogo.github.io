@@ -19,7 +19,10 @@
       const admin = api.isAdmin(u);
       root.innerHTML = `
         <div class="acct-head" data-reveal="up">
-          <div class="acct-avatar">${N.esc(((name.trim().split(/\s+/).pop()) || u.email || "?").charAt(0).toUpperCase())}${N.avatarImg(u.photoURL)}</div>
+          <div class="acct-av-wrap">
+            <div class="acct-avatar" data-av></div>
+            <button type="button" class="acct-av-cam" data-av-pick aria-label="Đổi ảnh đại diện" title="Đổi ảnh đại diện"><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg></button>
+          </div>
           <div class="acct-hello">
             <span class="kicker">Tài khoản của tôi</span>
             <h1>Xin chào, ${N.esc(name.split(" ").pop() || "bạn")}!${admin ? ' <span class="admin-tag">Quản trị</span>' : ""}</h1>
@@ -35,6 +38,19 @@
           <form class="co-card acct-profile" data-profile novalidate data-reveal="left">
             <h2><span class="step">1</span> Thông tin cá nhân</h2>
             <div class="form-alert" data-pmsg hidden></div>
+            <div class="av-edit">
+              <div class="acct-avatar av-sm" data-av></div>
+              <div class="av-edit-body">
+                <b>Ảnh đại diện</b>
+                <span data-av-src></span>
+                <div class="av-edit-btns">
+                  <button type="button" class="btn btn-ink btn-sm" data-av-pick>Tải ảnh lên</button>
+                  <button type="button" class="btn btn-outline btn-sm" data-av-google hidden>Dùng ảnh Google</button>
+                  <button type="button" class="auth-link" data-av-remove hidden>Xóa ảnh</button>
+                </div>
+              </div>
+              <input type="file" accept="image/jpeg,image/png,image/webp,image/gif,image/*" data-av-file hidden>
+            </div>
             <label class="field" data-f="name"><span>Họ và tên</span><input name="name" maxlength="60" value="${N.esc(name)}"><span class="err">Vui lòng nhập họ tên.</span></label>
             <label class="field" data-f="phone"><span>Số điện thoại</span><input name="phone" type="tel" inputmode="tel" maxlength="15" value="${N.esc(prof.phone || "")}"><span class="err">Số điện thoại chưa đúng.</span></label>
             <label class="field"><span>Địa chỉ giao hàng mặc định</span><input name="address" maxlength="160" value="${N.esc(prof.address || "")}" placeholder="Số nhà, tên đường, phường, TP.HCM"></label>
@@ -60,6 +76,51 @@
           </div>
         </div>`;
       root.querySelectorAll("[data-reveal]").forEach((el) => N.anim([el], el.dataset.reveal, { stagger: false }));
+
+      /* ---- avatar: custom upload (resized to 256px square JPEG, stored in Firestore) → Google photo → initial ---- */
+      if (prof.photo && !api.photo) api.photo = prof.photo;
+      const initial = N.esc(((name.trim().split(/\s+/).pop()) || u.email || "?").charAt(0).toUpperCase());
+      const paintAv = () => {
+        const custom = api.photo, google = u.photoURL;
+        root.querySelectorAll("[data-av]").forEach((el) => { el.innerHTML = initial + N.avatarImg(custom || google); });
+        root.querySelector("[data-av-src]").textContent = custom ? "Ảnh bạn đã tải lên." : google ? "Đang dùng ảnh từ tài khoản Google." : "JPG, PNG hoặc WEBP – ảnh sẽ được tự cắt vuông.";
+        root.querySelector("[data-av-google]").hidden = !(custom && google);
+        root.querySelector("[data-av-remove]").hidden = !custom || !!google;
+      };
+      paintAv();
+      document.addEventListener("nhan:photo", paintAv);
+      const toAvatar = (file) => new Promise((ok, fail) => {
+        if (!file || !/^image\//.test(file.type)) return fail(new Error("Vui lòng chọn một tệp ảnh (JPG, PNG, WEBP)."));
+        if (file.size > 20e6) return fail(new Error("Ảnh quá lớn (tối đa 20MB)."));
+        const url = URL.createObjectURL(file), img = new Image();
+        img.onload = () => {
+          const S = 256, s = Math.min(img.naturalWidth, img.naturalHeight);
+          const c = document.createElement("canvas"); c.width = c.height = S;
+          const g = c.getContext("2d"); g.fillStyle = "#fff"; g.fillRect(0, 0, S, S);
+          g.imageSmoothingQuality = "high";
+          g.drawImage(img, (img.naturalWidth - s) / 2, (img.naturalHeight - s) / 2, s, s, 0, 0, S, S);
+          URL.revokeObjectURL(url);
+          let q = 0.86, d = c.toDataURL("image/jpeg", q);
+          while (d.length > 90000 && q > 0.45) { q -= 0.12; d = c.toDataURL("image/jpeg", q); }
+          ok(d);
+        };
+        img.onerror = () => { URL.revokeObjectURL(url); fail(new Error("Không đọc được ảnh này. Hãy thử ảnh JPG hoặc PNG.")); };
+        img.src = url;
+      });
+      const fileIn = root.querySelector("[data-av-file]");
+      root.querySelectorAll("[data-av-pick]").forEach((b) => b.addEventListener("click", () => fileIn.click()));
+      const avBusy = (on) => root.querySelectorAll("[data-av-pick],[data-av-google],[data-av-remove]").forEach((b) => (b.disabled = on));
+      fileIn.addEventListener("change", async () => {
+        const f = fileIn.files[0]; fileIn.value = "";
+        if (!f) return;
+        avBusy(true); N.toast("Đang tải ảnh lên…");
+        try { await api.setPhoto(await toAvatar(f)); N.toast("Đã cập nhật ảnh đại diện"); }
+        catch (err) { N.toast(err && err.code ? api.errorText(err) : (err && err.message) || "Không tải được ảnh."); }
+        avBusy(false);
+      });
+      const clearPhoto = async (msg) => { avBusy(true); try { await api.setPhoto(null); N.toast(msg); } catch (err) { N.toast(api.errorText(err)); } avBusy(false); };
+      root.querySelector("[data-av-google]").addEventListener("click", () => clearPhoto("Đã chuyển về ảnh Google"));
+      root.querySelector("[data-av-remove]").addEventListener("click", () => clearPhoto("Đã xóa ảnh đại diện"));
 
       root.querySelector("[data-signout]").addEventListener("click", async () => { await api.signOut(); N.toast("Đã đăng xuất"); location.replace(N.HOME); });
       root.querySelector("[data-verify]")?.addEventListener("click", async (e) => { try { await u.sendEmailVerification(); e.target.textContent = "Đã gửi – kiểm tra hộp thư"; } catch (err) { N.toast(api.errorText(err)); } });

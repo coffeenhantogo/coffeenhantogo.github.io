@@ -132,6 +132,14 @@
           };
           await db.collection("orders").doc(o.code).set(doc);
         },
+        /* custom avatar: a small square JPEG (data URL, ~20–60 KB) kept in users/{uid}.photo.
+           null removes it (the header then falls back to the Google photo, then the initial). */
+        async setPhoto(dataUrl) {
+          if (!api.user) throw new Error("not signed in");
+          const FV = fb.firestore.FieldValue;
+          await db.collection("users").doc(api.user.uid).set({ photo: dataUrl || FV.delete(), photoUpdatedAt: ts() }, { merge: true });
+          setCustomPhoto(dataUrl || null);
+        },
         async myOrders() {
           if (!api.user) return [];
           const qs = await db.collection("orders").where("uid", "==", api.user.uid).limit(100).get();
@@ -161,10 +169,22 @@
         } catch { /* stats are best-effort */ }
       };
 
+      // custom avatar cache (per uid) so the header shows it instantly on every page
+      const photoKey = (uid) => `nhan-photo-${uid}`;
+      const setCustomPhoto = (p) => {
+        api.photo = p || null;
+        try { if (api.user) { if (p) localStorage.setItem(photoKey(api.user.uid), p); else localStorage.removeItem(photoKey(api.user.uid)); } } catch { /* storage full / blocked */ }
+        N.updateAccountUI && N.updateAccountUI(api.user, api);
+        document.dispatchEvent(new CustomEvent("nhan:photo", { detail: api.photo }));
+      };
+
       let first = true;
       auth.onAuthStateChanged((u) => {
         if (u && !api._googlePending) touch(u); // Google sign-ins are recorded only once accepted
         api.user = u;
+        api.photo = null;
+        if (u) { try { api.photo = localStorage.getItem(photoKey(u.uid)) || null; } catch { /* ignore */ } }
+        if (u) db.collection("users").doc(u.uid).get().then((s) => { const p = (s.exists && s.data().photo) || null; if (api.user && api.user.uid === u.uid && p !== api.photo) setCustomPhoto(p); }).catch(() => {});
         N.updateAccountUI && N.updateAccountUI(u, api);
         document.dispatchEvent(new CustomEvent("nhan:user", { detail: u }));
         if (first) { first = false; N._fbResolve(api); }

@@ -565,11 +565,11 @@
   } else N._fbResolve(null);
   const givenName = (s) => { s = String(s || "").trim(); if (s.includes("@") && !s.includes(" ")) return s.split("@")[0]; const w = s.split(/\s+/); return w[w.length - 1] || s; };
   /* avatar: Google profile photo when available, the initial underneath as fallback (image errors remove the img) */
-  N.avatarImg = (url) => url && /^https:\/\//.test(url) ? `<img src="${esc(url)}" alt="" referrerpolicy="no-referrer" loading="lazy" onerror="this.remove()">` : "";
+  N.avatarImg = (url) => url && /^(https:\/\/|data:image\/(jpeg|png|webp);base64,)/.test(url) ?`<img src="${esc(url)}" alt="" referrerpolicy="no-referrer" loading="lazy" onerror="this.remove()">` : "";
   const SHIELD = (w) => `<svg viewBox="0 0 24 24" width="${w}" height="${w}" aria-hidden="true"><path d="M12 3 5 6v5c0 4.4 3 8.3 7 9.5 4-1.2 7-5.1 7-9.5V6z" fill="currentColor"/><path d="m9 12 2 2 4-4" fill="none" stroke="#A8D636" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
   N.updateAccountUI = (u, api) => {
     const first = u ? (u.displayName || u.email || "?").trim() : "";
-    const photo = u ? N.avatarImg(u.photoURL) : "";
+    const photo = u ? N.avatarImg((api && api.photo) || u.photoURL) : ""; // custom upload → Google photo → initial
     const mail = u ? esc(u.email || "") : "";
     document.querySelectorAll("[data-account-link]").forEach((a) => {
       if (u) {
