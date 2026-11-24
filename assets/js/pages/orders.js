@@ -43,75 +43,122 @@
       </div>`;
   };
 
-  /* success page */
+  /* success / order detail page — local copy, else load from the shop database; status is live */
   const sRoot = document.querySelector("[data-success]");
-  if (sRoot) {
-    const o = N.orders.get(N.params.get("ma"));
+  const ST = {
+    pending: ["Mới đặt – chờ quán xác nhận", "st-new"], confirmed: ["Đã xác nhận", "st-ok"], making: ["Đang pha / chuẩn bị", "st-make"],
+    delivering: ["Đang giao", "st-ship"], done: ["Hoàn thành", "st-done"], cancelled: ["Đã hủy", "st-cancel"],
+  };
+  if (sRoot) (async () => {
+    const code = N.params.get("ma");
+    let o = N.orders.get(code);
+    const api = await N.fbReady;
+    let remote = null;
+    if (api && api.user && code) { try { const s = await api.db.collection("orders").doc(code).get(); if (s.exists) remote = s.data(); } catch { /* not allowed / offline */ } }
+    if (!o && remote) o = { ...remote, createdAt: remote.createdAtLocal, synced: true };
     if (!o) {
-      sRoot.innerHTML = `<div class="success-card"><h1>Không tìm thấy đơn hàng</h1><p class="lead">Đơn có thể được đặt trên thiết bị khác. Vui lòng gọi ${S.phoneDisplay} để được hỗ trợ.</p><div class="success-actions"><a class="btn btn-lime" href="don-hang.html">Đơn hàng của tôi</a><a class="btn btn-outline" href="index.html">Về trang chủ</a></div></div>`;
+      sRoot.innerHTML = `<div class="success-card"><h1>Không tìm thấy đơn hàng</h1><p class="lead">${api && !api.user ? `Hãy <a href="dang-nhap.html?next=${encodeURIComponent("dat-hang-thanh-cong.html?ma=" + (code || ""))}" style="font-weight:800;text-decoration:underline">đăng nhập</a> để xem đơn của bạn.` : `Vui lòng gọi ${S.phoneDisplay} để được hỗ trợ.`}</p><div class="success-actions"><a class="btn btn-lime" href="don-hang.html">Đơn hàng của tôi</a><a class="btn btn-outline" href="${N.HOME}">Về trang chủ</a></div></div>`;
       return;
     }
-    const sent = o.status === "sent";
+    const received = o.synced || !!remote || o.status === "sent";
+    const fresh = Date.now() - new Date(o.createdAt || o.createdAtLocal || 0).getTime() < 10 * 60 * 1000;
+    const live = remote ? remote.status : "pending";
+    const [stText, stCls] = ST[live] || ST.pending;
     sRoot.innerHTML = `
       <div class="success-card" data-reveal="zoom">
         <div class="success-ic"><svg viewBox="0 0 24 24" width="42" height="42" aria-hidden="true"><path d="m5 12.5 4.5 4.5L19 7.5" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
-        <h1>${sent ? "Đặt hàng thành công!" : "Đã ghi nhận đơn hàng"}</h1>
+        <h1>${received ? (fresh ? "Đặt hàng thành công!" : "Chi tiết đơn hàng") : "Đã ghi nhận đơn hàng"}</h1>
         <div class="order-code">Mã đơn: ${N.esc(o.code)}</div>
-        ${sent
-          ? `<p class="lead">Cảm ơn ${N.esc(o.customer.name)}! Đơn đã được gửi tới Nhẫn. Nhân viên sẽ gọi hoặc nhắn Zalo tới <b>${N.esc(o.customer.phone)}</b> để xác nhận đơn. Bạn có thể gửi thêm qua Zalo để được xử lý nhanh hơn.</p>`
-          : `<div class="form-alert warn" style="margin-top:16px;text-align:left">${N.canSend() ? "Không gửi được đơn tự động (mạng chập chờn hoặc hệ thống email chưa kích hoạt)." : "Bạn đang xem thử trên máy nên đơn chưa được gửi email."} <b>Vui lòng bấm “Gửi đơn qua Zalo”</b> hoặc gọi ${S.phoneDisplay} để Nhẫn nhận đơn.</div>`}
+        ${received ? `<p style="margin-top:8px">Trạng thái: <span class="st ${stCls}" data-live-status>${stText}</span></p>` : ""}
+        ${received
+          ? `<p class="lead">Cảm ơn ${N.esc(o.customer.name)}! Đơn đã đến quán. Nhân viên sẽ gọi hoặc nhắn Zalo tới <b>${N.esc(o.customer.phone)}</b> để xác nhận. Trạng thái ở trên tự cập nhật khi quán xử lý.</p>`
+          : `<div class="form-alert warn" style="margin-top:16px;text-align:left">${N.canSend() ? "Không gửi được đơn tự động (mạng chập chờn)." : "Bạn đang xem thử trên máy nên đơn chưa được gửi."} <b>Vui lòng bấm “Gửi đơn qua Zalo”</b> hoặc gọi ${S.phoneDisplay} để Nhẫn nhận đơn.</div>`}
         ${payPanel(o)}
         <div class="order-detail">${detailRows(o)}</div>
         <div class="success-actions">
-          <button class="btn ${sent ? "btn-outline" : "btn-lime"}" type="button" data-zalo>Gửi đơn qua Zalo</button>
-          <a class="btn btn-outline" href="tel:${S.phone}">Gọi ${S.phoneDisplay}</a>
-          <a class="btn ${sent ? "btn-lime" : "btn-outline"}" href="thuc-don.html">Tiếp tục mua</a>
+          <button class="btn ${received ? "btn-outline" : "btn-lime"}" type="button" data-zalo>Gửi đơn qua Zalo</button>
+          <a class="btn btn-outline" href="don-hang.html">Đơn hàng của tôi</a>
+          <a class="btn ${received ? "btn-lime" : "btn-outline"}" href="thuc-don.html">Tiếp tục mua</a>
         </div>
       </div>`;
     sRoot.querySelector("[data-zalo]").addEventListener("click", () => zaloSend(o));
     N.anim(sRoot.querySelectorAll("[data-reveal]"), "zoom", { stagger: false });
-  }
-
-  /* orders list page */
+    if (api && api.user && received) {
+      api.db.collection("orders").doc(o.code).onSnapshot((s) => {
+        if (!s.exists) return;
+        const [t2, c2] = ST[s.data().status] || ST.pending;
+        const el = sRoot.querySelector("[data-live-status]");
+        if (el) { el.className = `st ${c2}`; el.textContent = t2; }
+      }, () => {});
+    }
+  })();
+  /* orders list page — live from the shop database when signed in, local history otherwise */
+  const STATUS = {
+    pending: ["Mới đặt – chờ quán xác nhận", "st-new"], confirmed: ["Đã xác nhận", "st-ok"], making: ["Đang pha / chuẩn bị", "st-make"],
+    delivering: ["Đang giao", "st-ship"], done: ["Hoàn thành", "st-done"], cancelled: ["Đã hủy", "st-cancel"],
+  };
+  const STEPS = ["pending", "confirmed", "making", "done"];
   const lRoot = document.querySelector("[data-orders]");
   if (lRoot) {
-    const list = N.orders.all();
-    if (!list.length) {
-      lRoot.innerHTML = `<div class="co-card"><div class="cart-empty"><div class="cart-empty-ic">${N.IC.receipt.replace('width="20" height="20"', 'width="34" height="34"')}</div><p>Bạn chưa có đơn hàng nào trên thiết bị này.</p><a class="btn btn-lime" href="thuc-don.html">Đặt món ngay</a></div></div>`;
-      return;
-    }
-    lRoot.innerHTML = `<div class="order-list">${list.map((o) => `
-      <article class="order-item">
-        <div>
-          <h3>${N.esc(o.code)} ${statusLabel(o)}</h3>
-          <p>${new Date(o.createdAt).toLocaleString("vi-VN")} · ${o.items.reduce((s, i) => s + i.qty, 0)} món · ${o.delivery.method === "ship" ? "Giao tận nơi" : "Nhận tại quán"}</p>
-          <p>${o.items.map((i) => `${N.esc(i.name)} ×${i.qty}`).join(", ")}</p>
-        </div>
-        <div style="display:flex;gap:8px;flex-wrap:wrap">
-          <a class="btn btn-outline btn-sm" href="dat-hang-thanh-cong.html?ma=${encodeURIComponent(o.code)}">Chi tiết</a>
-          <button class="btn btn-outline btn-sm" type="button" data-reorder="${N.esc(o.code)}">Đặt lại</button>
-          <button class="btn btn-lime btn-sm" type="button" data-zalo="${N.esc(o.code)}">Gửi Zalo</button>
-        </div>
-      </article>`).join("")}</div>
-      <p class="note" style="margin-top:18px;color:var(--muted);font-size:13.5px">Lịch sử đơn được lưu trên trình duyệt của thiết bị này (tối đa 50 đơn gần nhất).</p>`;
+    let current = [];
+    const reorder = (o) => {
+      o.items.forEach((i) => {
+        const p = N.byId[i.id]; if (!p) return;
+        const vals = (i.opts || "").split(" · "), opts = {};
+        Object.keys(p.options || {}).forEach((k) => { const v = vals.find((x) => p.options[k].includes(x)); if (v) opts[k] = v; });
+        N.cart.add(i.id, i.qty, opts, i.note || "");
+      });
+      N.open("cartDrawer");
+    };
+    const empty = (msg) => `<div class="co-card"><div class="cart-empty"><div class="cart-empty-ic">${N.IC.receipt.replace('width="20" height="20"', 'width="34" height="34"')}</div><p>${msg}</p><a class="btn btn-lime" href="thuc-don.html">Đặt món ngay</a></div></div>`;
+    const when = (o) => { const d = o.createdAt && o.createdAt.toDate ? o.createdAt.toDate() : new Date(o.createdAtLocal || o.createdAt || Date.now()); return d.toLocaleString("vi-VN"); };
+    const progress = (s) => {
+      if (s === "cancelled" || s === "delivering") return "";
+      const idx = STEPS.indexOf(s);
+      return `<div class="o-steps">${STEPS.map((k, i) => `<span class="${i <= idx ? "on" : ""}">${["Đặt", "Xác nhận", "Pha chế", "Xong"][i]}</span>`).join("")}</div>`;
+    };
+    const renderLive = (list) => {
+      current = list;
+      if (!list.length) { lRoot.innerHTML = empty("Bạn chưa có đơn hàng nào."); return; }
+      lRoot.innerHTML = `<div class="order-list">${list.map((o) => {
+        const [st, cls] = STATUS[o.status] || STATUS.pending;
+        return `<article class="order-item">
+          <div>
+            <h3>${N.esc(o.code)} <span class="st ${cls}">${st}</span></h3>
+            <p>${when(o)} · ${o.items.reduce((s, i) => s + i.qty, 0)} món · ${o.delivery.method === "ship" ? "Giao tận nơi" : "Nhận tại quán"} · <b>${N.esc(o.totalText)}</b></p>
+            <p>${o.items.map((i) => `${N.esc(i.name)} ×${i.qty}`).join(", ")}</p>
+            ${progress(o.status)}
+          </div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap">
+            <a class="btn btn-outline btn-sm" href="dat-hang-thanh-cong.html?ma=${encodeURIComponent(o.code)}">Chi tiết</a>
+            <button class="btn btn-lime btn-sm" type="button" data-reorder="${N.esc(o.code)}">Đặt lại</button>
+          </div>
+        </article>`;
+      }).join("")}</div>
+      <p class="note" style="margin-top:18px;color:var(--muted);font-size:13.5px">Trạng thái đơn cập nhật tự động khi quán xử lý – không cần tải lại trang.</p>`;
+    };
+    const renderLocal = () => {
+      const list = N.orders.all();
+      current = list;
+      if (!list.length) { lRoot.innerHTML = empty("Bạn chưa có đơn hàng nào trên thiết bị này."); return; }
+      lRoot.innerHTML = `<div class="order-list">${list.map((o) => `
+        <article class="order-item">
+          <div><h3>${N.esc(o.code)}</h3><p>${when(o)} · ${o.items.reduce((s, i) => s + i.qty, 0)} món</p><p>${o.items.map((i) => `${N.esc(i.name)} ×${i.qty}`).join(", ")}</p></div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap"><a class="btn btn-outline btn-sm" href="dat-hang-thanh-cong.html?ma=${encodeURIComponent(o.code)}">Chi tiết</a><button class="btn btn-lime btn-sm" type="button" data-reorder="${N.esc(o.code)}">Đặt lại</button></div>
+        </article>`).join("")}</div>
+        <div class="co-member" style="margin-top:18px"><span><a href="dang-nhap.html?next=don-hang.html">Đăng nhập</a> để xem trạng thái đơn do quán cập nhật.</span></div>`;
+    };
     lRoot.addEventListener("click", (e) => {
-      const z = e.target.closest("[data-zalo]");
-      if (z) zaloSend(N.orders.get(z.dataset.zalo));
       const r = e.target.closest("[data-reorder]");
-      if (r) {
-        const o = N.orders.get(r.dataset.reorder);
-        o.items.forEach((i) => {
-          if (!N.byId[i.id]) return;
-          const p = N.byId[i.id];
-          // rebuild option object from the summary text in the same order as product options
-          const vals = (i.opts || "").split(" · ");
-          const opts = {};
-          Object.keys(p.options || {}).forEach((k) => { const v = vals.find((x) => p.options[k].includes(x)); if (v) opts[k] = v; });
-          N.cart.add(i.id, i.qty, opts, i.note || "");
-        });
-        N.open("cartDrawer");
-      }
+      if (r) { const o = current.find((x) => x.code === r.dataset.reorder); o && reorder(o); }
     });
-    N.anim(lRoot.querySelectorAll(".order-item"), "up");
+    lRoot.innerHTML = `<div class="acct-loading"><span class="spinner"></span> Đang tải đơn hàng…</div>`;
+    N.fbReady.then((api) => {
+      if (!api || !api.user) { renderLocal(); return; }
+      api.db.collection("orders").where("uid", "==", api.user.uid).limit(100).onSnapshot((snap) => {
+        const list = snap.docs.map((d) => d.data()).sort((a, b) => (b.createdAtLocal || "").localeCompare(a.createdAtLocal || ""));
+        renderLive(list);
+      }, () => renderLocal());
+    });
   }
 })();

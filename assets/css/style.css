@@ -1305,3 +1305,12 @@ img.img-ready { opacity: 1; transition: opacity .7s ease; }
 .login-gate p { color: #6d5446; margin-top: 10px; line-height: 1.6; }
 .login-gate .gate-note { font-size: 13.5px; color: var(--muted); margin-top: 18px; }
 
+
+/* order progress steps */
+.o-steps { display: flex; gap: 6px; margin-top: 10px; flex-wrap: wrap; }
+.o-steps span { position: relative; padding: 4px 12px 4px 22px; border-radius: 999px; background: var(--card); color: var(--muted); font-size: 12px; font-weight: 800; }
+.o-steps span::before { content: ''; position: absolute; left: 9px; top: 50%; width: 7px; height: 7px; margin-top: -3.5px; border-radius: 50%; background: var(--latte); }
+.o-steps span.on { background: var(--lime-soft); color: var(--lime-deep); }
+.o-steps span.on::before { background: var(--lime-dark); }
+.order-item h3 .st { vertical-align: middle; margin-left: 6px; }
+
