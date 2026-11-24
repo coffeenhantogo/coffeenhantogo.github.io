@@ -131,26 +131,32 @@
       const today = new Date();
       const byUid = {};
       orders.forEach((o) => { if (!o.uid) return; const b = (byUid[o.uid] = byUid[o.uid] || { n: 0, spend: 0, last: null }); b.n++; if (o.status !== "cancelled") b.spend += o.totalAmount || 0; const d = dateOf(o); if (!b.last || d > b.last) b.last = d; });
-      const rows = users.map((x) => ({ ...x, created: toDate(x.createdAt), login: toDate(x.lastLoginAt), stats: byUid[x.id] || { n: 0, spend: 0, last: null } }));
-      $("[data-n-users]").textContent = rows.length;
+      const ADMINS = (N.ADMIN_EMAILS || []).map((e) => e.toLowerCase());
+      const rows = users
+        .filter((x) => x.id !== u.uid && !ADMINS.includes((x.email || "").toLowerCase())) // shop admins are not customers
+        .map((x) => ({ ...x, created: toDate(x.createdAt), login: toDate(x.lastLoginAt), stats: byUid[x.id] || { n: 0, spend: 0, last: null } }));
+      const live = rows.filter((r) => !r.deleted);
+      $("[data-n-users]").textContent = live.length;
       $("[data-ustats]").innerHTML = [
-        ["Tổng khách hàng", rows.length],
-        ["Đăng ký mới hôm nay", rows.filter((r) => sameDay(r.created, today)).length],
-        ["Đăng ký 7 ngày qua", rows.filter((r) => daysAgo(r.created, 7)).length],
-        ["Đăng nhập hôm nay", rows.filter((r) => sameDay(r.login, today)).length],
+        ["Tổng khách hàng", live.length],
+        ["Đăng ký mới hôm nay", live.filter((r) => sameDay(r.created, today)).length],
+        ["Đăng ký 7 ngày qua", live.filter((r) => daysAgo(r.created, 7)).length],
+        ["Đăng nhập hôm nay", live.filter((r) => sameDay(r.login, today)).length],
       ].map(([k, v]) => `<div class="stat"><span>${k}</span><b>${v}</b></div>`).join("");
       root.querySelectorAll("[data-s]").forEach((b) => b.classList.toggle("is-active", b.dataset.s === csort));
       const nq = N.norm(cq);
       let list = rows.filter((r) => !nq || N.norm(`${r.name || ""} ${r.email || ""} ${r.phone || ""}`).includes(nq));
       const t = (d) => (d ? d.getTime() : 0);
+      const byDeleted = (a, b) => (a.deleted ? 1 : 0) - (b.deleted ? 1 : 0);
       if (csort === "login") list.sort((a, b) => t(b.login) - t(a.login));
       else if (csort === "spend") list.sort((a, b) => b.stats.spend - a.stats.spend || b.stats.n - a.stats.n);
       else list.sort((a, b) => t(b.created) - t(a.created));
+      list.sort(byDeleted);
       $("[data-ulist]").innerHTML = list.length ? `
         <div class="cust-table" role="table">
           <div class="ct-row ct-head" role="row"><span>Khách hàng</span><span>Liên hệ</span><span>Đăng ký</span><span>Đăng nhập gần nhất</span><span>Đơn hàng</span><span>Thao tác</span></div>
           ${list.map((r) => {
-            const isNew = daysAgo(r.created, 1);
+            const isNew = !r.deleted && !r.banned && daysAgo(r.created, 1);
             const prov = r.provider === "google.com" ? '<span class="st st-ok">Google</span>' : '<span class="st st-make">Email</span>';
             const self = r.id === u.uid;
             const actions = self ? '<small>Tài khoản của bạn</small>' : r.deleted
