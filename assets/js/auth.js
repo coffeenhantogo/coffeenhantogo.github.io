@@ -151,6 +151,7 @@
           }
           const provider = (u.providerData[0] && u.providerData[0].providerId) || "password";
           const data = { email: u.email || "", provider, lastLoginAt: ts(), loginCount: fb.firestore.FieldValue.increment(1) };
+          if (u.photoURL) data.photoURL = u.photoURL; // Google profile photo, shown in the admin customer list
           if (!snap.exists) Object.assign(data, { name: u.displayName || "", phone: "", createdAt: u.metadata && u.metadata.creationTime ? fb.firestore.Timestamp.fromDate(new Date(u.metadata.creationTime)) : ts() });
           else if (!snap.data().name && u.displayName) data.name = u.displayName;
           // count at most once per browser session

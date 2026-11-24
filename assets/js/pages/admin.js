@@ -171,7 +171,7 @@
                 ? `<button type="button" class="ct-act" data-unban="${r.id}">Mở khóa</button><button type="button" class="ct-act danger" data-del="${r.id}">Xóa</button>`
                 : `<button type="button" class="ct-act warn" data-ban="${r.id}">Khóa</button><button type="button" class="ct-act danger" data-del="${r.id}">Xóa</button>`;
             return `<div class="ct-row ${r.banned ? "is-banned" : ""}" role="row">
-              <span class="ct-name"><i class="ct-av">${N.esc(((r.name || "").replace(/^\[Đã xóa\]\s*/, "") || r.email || "?").charAt(0).toUpperCase())}</i><b>${N.esc(r.name || "(chưa có tên)")}</b>${r.banned && !r.deleted ? `<span class="st st-cancel" title="${N.esc(r.banReason || "")}">Đã khóa</span>` : isNew ? '<span class="st st-new">Mới</span>' : ""}</span>
+              <span class="ct-name"><i class="ct-av">${N.esc(((r.name || "").replace(/^\[Đã xóa\]\s*/, "") || r.email || "?").charAt(0).toUpperCase())}${N.avatarImg(r.photoURL)}</i><b>${N.esc(r.name || "(chưa có tên)")}</b>${r.banned && !r.deleted ? `<span class="st st-cancel" title="${N.esc(r.banReason || "")}">Đã khóa</span>` : isNew ? '<span class="st st-new">Mới</span>' : ""}</span>
               <span class="ct-contact">${r.phone ? `<a href="tel:${N.esc(r.phone)}">${N.esc(r.phone)}</a>` : '<em>Chưa có SĐT</em>'}<small>${N.esc(r.email || "")}</small></span>
               <span><b class="ct-strong">${r.created ? r.created.toLocaleDateString("vi-VN") : "—"}</b>${prov}</span>
               <span><b class="ct-strong">${ago(r.login)}</b><small>${r.loginCount ? `${r.loginCount} lần đăng nhập` : ""}</small></span>

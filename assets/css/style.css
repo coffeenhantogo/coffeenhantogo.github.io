@@ -1398,3 +1398,23 @@ img.img-ready { opacity: 1; transition: opacity .7s ease; }
 .header-actions .icon-btn.is-member::after { display: none; }
 .hb-user-label small { color: var(--muted); }
 @media (max-width: 760px) { .header-actions .icon-btn.is-member { padding: 0; background: transparent; } }
+
+/* Google profile photo + email in the account pill */
+.hb-avatar { position: relative; flex-shrink: 0; }
+.hb-avatar > img { position: absolute; inset: 0; width: 100%; height: 100%; border-radius: 50%; object-fit: cover; background: var(--latte); }
+.hb-avatar.has-photo { box-shadow: 0 0 0 2px #fff, 0 2px 6px rgba(17,17,17,.18); }
+.hb-avatar.hb-admin.has-photo { box-shadow: 0 0 0 2px var(--lime); }
+.hb-badge { position: absolute; right: -4px; bottom: -3px; width: 16px; height: 16px; border-radius: 50%; display: grid; place-items: center; background: var(--ink); color: var(--lime); box-shadow: 0 0 0 2px #fff; z-index: 1; }
+.hb-line { display: flex; align-items: center; gap: 6px; min-width: 0; }
+.hb-role { font-style: normal; font-size: 9.5px; font-weight: 900; letter-spacing: .08em; text-transform: uppercase; padding: 2px 7px; border-radius: 999px; background: var(--ink); color: var(--lime); line-height: 1.3; }
+.hb-admin-label small.hb-mail { margin-top: 3px; font-size: 11.5px; font-weight: 600; letter-spacing: 0; text-transform: none; color: var(--muted); max-width: 170px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+@media (max-width: 1180px) { .hb-admin-label small.hb-mail { max-width: 120px; } }
+.mnav a.m-acct { display: flex; align-items: center; gap: 12px; text-transform: none; letter-spacing: 0; }
+.m-acct .hb-avatar { width: 36px; height: 36px; }
+.m-acct-txt { display: flex; flex-direction: column; min-width: 0; line-height: 1.25; }
+.m-acct-txt b { font-weight: 800; }
+.m-acct-txt small { font-size: 12.5px; font-weight: 600; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.acct-avatar { position: relative; overflow: hidden; }
+.acct-avatar > img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+.ct-av { position: relative; overflow: hidden; }
+.ct-av > img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; border-radius: inherit; }
