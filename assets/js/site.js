@@ -64,6 +64,23 @@
     });
   };
   N.applyShop(store.get(SHOP_KEY, null));
+  /* prices written in page copy follow the menu (and the admin's price edits):
+     <span data-price="product-id">   → that product's price (smallest size), or data-size="Lớn 700ml"
+     <span data-price-min="group:ca-phe"> / "type:drink" → cheapest price in that group / type */
+  N.fillPrices = () => {
+    document.querySelectorAll("[data-price]").forEach((el) => {
+      const p = byId[el.dataset.price]; if (!p) return;
+      const v = p.priceBy ? (el.dataset.size ? p.priceBy[el.dataset.size] : Math.min(...Object.values(p.priceBy))) : p.price;
+      if (v != null) el.textContent = fmtVND(v);
+    });
+    document.querySelectorAll("[data-price-min]").forEach((el) => {
+      const [k, val] = el.dataset.priceMin.split(":");
+      const vals = N.PRODUCTS.filter((p) => (k === "group" ? p.group === val : p.type === val))
+        .flatMap((p) => (p.priceBy ? Object.values(p.priceBy) : [p.price])).filter((x) => x != null);
+      if (vals.length) el.textContent = fmtVND(Math.min(...vals));
+    });
+  };
+  N.fillPrices();
   N.shopReady = new Promise((r) => (N._shopResolve = r)); // first fresh settings (or cache after a timeout)
   setTimeout(() => N._shopResolve(N.shop), 6000);
 
@@ -647,7 +664,7 @@
     store.set(SHOP_KEY, s);
     if (changed) {
       N.applyShop(s);
-      renderCart(); renderShopBanner();
+      renderCart(); renderShopBanner(); N.fillPrices();
       document.dispatchEvent(new CustomEvent("nhan:shop", { detail: N.shop }));
     }
     N._shopResolve(N.shop);
