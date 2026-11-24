@@ -1981,3 +1981,9 @@ a.gx-note:hover { border-color: var(--lime-dark); box-shadow: 0 10px 24px rgba(5
 .adm-badge { transform: none; border-radius: 50%; width: 84px; height: 84px; box-shadow: 0 0 0 4px rgba(255,255,255,.92), 0 12px 30px rgba(0,0,0,.35); }
 .adm-badge svg { width: 40px; height: 40px; }
 @media (max-width: 640px) { .adm-badge { width: 62px; height: 62px; } .adm-badge svg { width: 30px; height: 30px; } }
+.st.st-warn { background: #fff1d6; color: #8a4b00; }
+.ad-pricewarn { display: inline-block; margin-left: 8px; padding: 2px 8px; border-radius: 8px; background: #fff1d6; color: #8a4b00; font-style: normal; font-weight: 800; font-size: 13px; }
+.safe-tips ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
+.safe-tips li { position: relative; padding-left: 30px; font-size: 14.5px; color: #6d5446; line-height: 1.5; }
+.safe-tips li::before { content: ""; position: absolute; left: 0; top: 2px; width: 20px; height: 20px; border-radius: 50%; background: var(--lime-soft) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M12 3 5 6v5c0 4.4 3 8.3 7 9.5 4-1.2 7-5.1 7-9.5V6z' fill='%235F7A22'/%3E%3C/svg%3E") center / 12px no-repeat; }
+.safe-tips b { color: var(--brown); }

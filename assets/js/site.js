@@ -43,6 +43,63 @@
   };
   Object.assign(N, { esc, fmtVND, img, byId, productUrl, unitPrice, priceText, norm, optSummary, store, STATIC, params });
 
+  /* ---------- security helpers ----------
+     Data written by customers (orders, profiles) is untrusted: coerce every field to the expected
+     type/length before any rendering, so a tampered document can never inject HTML/script. */
+  const sStr = (v, max = 200) => (v == null ? "" : String(v)).slice(0, max);
+  const sNum = (v) => (typeof v === "number" && Number.isFinite(v) ? v : null);
+  const sInt = (v, lo, hi, d) => { const n = Math.round(Number(v)); return Number.isFinite(n) ? Math.min(hi, Math.max(lo, n)) : d; };
+  const ORDER_ST = ["pending", "confirmed", "making", "delivering", "done", "cancelled"];
+  // new passwords: 8+ characters with at least one letter and one digit
+  N.strongPw = (pw) => typeof pw === "string" && pw.length >= 8 && /\p{L}/u.test(pw) && /\d/.test(pw);
+  N.cleanOrder = (o) => {
+    o = o || {};
+    const c = o.customer || {}, d = o.delivery || {};
+    return {
+      ...o,
+      code: sStr(o.code, 40), uid: sStr(o.uid, 128), status: ORDER_ST.includes(o.status) ? o.status : "pending",
+      cancelledBy: o.cancelledBy === "customer" ? "customer" : "",
+      createdAtLocal: sStr(o.createdAtLocal, 40),
+      customer: { name: sStr(c.name, 80), phone: sStr(c.phone, 20), email: sStr(c.email, 120) },
+      delivery: { method: d.method === "ship" ? "ship" : "pickup", address: sStr(d.address, 200), branch: sStr(d.branch, 200), time: sStr(d.time, 60) },
+      payment: sStr(o.payment, 60), note: sStr(o.note, 500), totalText: sStr(o.totalText, 40), totalAmount: sNum(o.totalAmount),
+      items: (Array.isArray(o.items) ? o.items : []).slice(0, 50).map((i) => ({
+        id: sStr(i && i.id, 60), name: sStr(i && i.name, 100), qty: sInt(i && i.qty, 1, 99, 1),
+        opts: sStr(i && i.opts, 120), note: sStr(i && i.note, 200), price: sNum(i && i.price),
+      })),
+    };
+  };
+  N.cleanUser = (u) => {
+    u = u || {};
+    return {
+      ...u,
+      name: sStr(u.name, 80), email: sStr(u.email, 120), phone: sStr(u.phone, 20), address: sStr(u.address, 200), branch: sStr(u.branch, 200),
+      provider: u.provider === "google.com" ? "google.com" : "password", banReason: sStr(u.banReason, 200),
+      loginCount: sInt(u.loginCount, 0, 1e6, 0), banned: u.banned === true, deleted: u.deleted === true,
+      photo: typeof u.photo === "string" && /^data:image\/(jpeg|png|webp);base64,[A-Za-z0-9+/=]+$/.test(u.photo) ? u.photo : "",
+      photoURL: typeof u.photoURL === "string" && /^https:\/\/[a-z0-9.-]+\.googleusercontent\.com\//.test(u.photoURL) ? u.photoURL : "",
+    };
+  };
+  /* anti-fraud: recompute an order's total from the current menu (size read from the options text).
+     Returns { ok, expected } – ok:false when the customer-sent prices do not match the menu. */
+  N.checkOrderPrice = (o) => {
+    let expected = 0;
+    for (const i of o.items) {
+      const p = byId[i.id];
+      if (!p) return { ok: false, expected: null };
+      const size = p.priceBy ? Object.keys(p.priceBy).find((k) => (i.opts || "").includes(k)) : null;
+      const unit = unitPrice(p, size ? { size } : {});
+      if (unit == null) return { ok: true, expected: null };
+      expected += unit * i.qty;
+    }
+    return { ok: o.totalAmount == null || o.totalAmount === expected, expected };
+  };
+  // clickjacking: refuse to be shown inside another site's frame (local file previews are allowed)
+  if (window.top !== window.self && /^https?:$/.test(location.protocol)) {
+    try { if (window.top.location.hostname !== location.hostname) throw 0; }
+    catch { document.documentElement.style.display = "none"; window.top.location.replace(location.href); }
+  }
+
   /* ---------- shop settings managed by the admin (Firestore settings/shop) ----------
      { open: bool, note: string, soldOut: {id: true}, prices: {id: {price} | {"<size>": n}} }
      Applied by mutating N.PRODUCTS (base values from data.js kept in p._base). Cached in

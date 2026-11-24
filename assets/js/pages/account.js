@@ -129,11 +129,21 @@
                 <div class="form-alert" data-pwmsg hidden></div>
                 <label class="field" data-f="cur"><span>Mật khẩu hiện tại</span><input name="cur" type="password" autocomplete="current-password"><span class="err">Vui lòng nhập mật khẩu hiện tại.</span></label>
                 <div class="form-2col">
-                  <label class="field" data-f="npw"><span>Mật khẩu mới</span><input name="npw" type="password" autocomplete="new-password" placeholder="Ít nhất 6 ký tự"><span class="err">Mật khẩu mới cần ít nhất 6 ký tự.</span></label>
+                  <label class="field" data-f="npw"><span>Mật khẩu mới</span><input name="npw" type="password" autocomplete="new-password" placeholder="Ít nhất 8 ký tự, có chữ và số"><span class="err">Mật khẩu cần ít nhất 8 ký tự, gồm cả chữ và số.</span></label>
                   <label class="field" data-f="npw2"><span>Nhập lại mật khẩu mới</span><input name="npw2" type="password" autocomplete="new-password"><span class="err">Mật khẩu nhập lại không khớp.</span></label>
                 </div>
                 <div class="pw-actions"><button type="button" class="btn btn-ink" data-pw-save>Cập nhật mật khẩu</button><button type="button" class="auth-link" data-pw-forgot>Quên mật khẩu hiện tại?</button></div>
               </form>` : `<div class="dcard"><p class="pw-google-note" style="margin:0">Bạn đăng nhập bằng Google – mật khẩu do tài khoản Google quản lý.</p></div>`}
+              <div class="dcard safe-tips">
+                <div class="dcard-head"><h2>Mẹo an toàn – chống lừa đảo</h2></div>
+                <ul>
+                  <li><b>Nhẫn không bao giờ hỏi</b> mật khẩu, mã OTP, số thẻ hay mã xác thực Google của bạn – qua điện thoại, Zalo hay email.</li>
+                  <li>Website chính thức duy nhất: <b>coffeenhantogo.github.io</b>. Kiểm tra kỹ địa chỉ trước khi đăng nhập.</li>
+                  <li>Chỉ chuyển khoản tới <b>ACB · 16470961 · TRAN NGUYEN MINH KHOI</b>. Tài khoản khác đều là giả mạo.</li>
+                  <li>Số điện thoại / Zalo duy nhất của quán: <b>${S.phoneDisplay}</b>. Nghi ngờ? Gọi số này để xác minh.</li>
+                  <li>Dùng mật khẩu riêng cho Nhẫn (không trùng mật khẩu email / ngân hàng) và đăng xuất khi dùng máy lạ.</li>
+                </ul>
+              </div>
               <div class="dcard dcard-out"><div><b>Đăng xuất</b><small>Thoát khỏi tài khoản trên thiết bị này.</small></div><button type="button" class="btn btn-outline" data-signout>Đăng xuất</button></div>
             </section>
           </div>
@@ -308,7 +318,7 @@
         const f = root.querySelector("[data-pwform]");
         const cur = f.cur.value, npw = f.npw.value;
         const set = (k, on) => { f.querySelector(`[data-f="${k}"]`).classList.toggle("has-error", on); return on; };
-        if ([set("cur", !cur), set("npw", npw.length < 6), set("npw2", npw !== f.npw2.value)].some(Boolean)) return;
+        if ([set("cur", !cur), set("npw", !N.strongPw(npw)), set("npw2", npw !== f.npw2.value)].some(Boolean)) return;
         const b = e.currentTarget; b.disabled = true; b.innerHTML = '<span class="spinner"></span> Đang cập nhật…';
         try {
           const cred = api.firebase.auth.EmailAuthProvider.credential(u.email, cur);
@@ -455,10 +465,10 @@
       const sortO = (list) => list.sort((a, b) => (b.createdAtLocal || "").localeCompare(a.createdAtLocal || ""));
       try {
         api.db.collection("orders").where("uid", "==", u.uid).limit(100).onSnapshot(
-          (snap) => { orders = sortO(snap.docs.map((d) => d.data())); renderOrders(); },
-          async () => { orders = sortO(await api.myOrders().catch(() => [])); renderOrders(); },
+          (snap) => { orders = sortO(snap.docs.map((d) => N.cleanOrder(d.data()))); renderOrders(); },
+          async () => { orders = sortO((await api.myOrders().catch(() => [])).map(N.cleanOrder)); renderOrders(); },
         );
-      } catch { orders = sortO(await api.myOrders().catch(() => [])); renderOrders(); }
+      } catch { orders = sortO((await api.myOrders().catch(() => [])).map(N.cleanOrder)); renderOrders(); }
       document.addEventListener("nhan:shop", renderOrders);
     };
     render(api.user);

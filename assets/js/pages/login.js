@@ -170,7 +170,7 @@
       const f = forms.register;
       const name = f.name.value.trim(), phone = f.phone.value.replace(/[\s.-]/g, ""), email = f.email.value.trim(), pw = f.password.value;
       const bad = [setErr(f, "name", name.length < 2), setErr(f, "phone", !PHONE_RE.test(phone)), setErr(f, "email", !EMAIL_RE.test(email)),
-        setErr(f, "password", pw.length < 6), setErr(f, "confirm", pw !== f.confirm.value)];
+        setErr(f, "password", !N.strongPw(pw)), setErr(f, "confirm", pw !== f.confirm.value)];
       f.querySelector('[data-f="agree"]').style.color = f.agree.checked ? "" : "#c0392b";
       if (bad.some(Boolean) || !f.agree.checked) { show("err", "Vui lòng kiểm tra lại các thông tin được đánh dấu."); return; }
       busy(f, true, "Đang tạo tài khoản…");

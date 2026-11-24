@@ -2,6 +2,7 @@ rules_version = '2';
 // Coffee Nhẫn To Go — Firestore security rules.
 // Paste into Firebase console → Firestore Database → Rules → Publish.
 // Admin = verified email listed below (keep in sync with NHAN.ADMIN_EMAILS in assets/js/data.js).
+// Everything not matched below is denied by default.
 service cloud.firestore {
   match /databases/{database}/documents {
 
@@ -13,31 +14,61 @@ service cloud.firestore {
     }
     function userDoc() { return /databases/$(database)/documents/users/$(request.auth.uid); }
     function isBanned() { return exists(userDoc()) && get(userDoc()).data.get('banned', false) == true; }
+    function changedKeys() { return request.resource.data.diff(resource == null ? {} : resource.data).affectedKeys(); }
     // fields only the admin may set
     function touchesModeration() {
-      return request.resource.data.diff(resource == null ? {} : resource.data).affectedKeys()
-        .hasAny(['banned', 'banReason', 'bannedAt', 'bannedBy', 'deleted', 'deletedAt']);
+      return changedKeys().hasAny(['banned', 'banReason', 'bannedAt', 'bannedBy', 'deleted', 'deletedAt']);
+    }
+    function isStr(v, max) { return v is string && v.size() <= max; }
+    // a changed profile field must be removed, or have the expected type / length
+    function strOk(d, ch, k, max) { return !ch.hasAny([k]) || !(k in d) || isStr(d[k], max); }
+    function tsOk(d, ch, k) { return !ch.hasAny([k]) || !(k in d) || d[k] is timestamp; }
+    function profileOk() {
+      let d = request.resource.data;
+      let ch = changedKeys();
+      return ch.hasOnly(['name', 'phone', 'email', 'address', 'branch', 'provider', 'photo', 'photoURL',
+                         'photoUpdatedAt', 'createdAt', 'registeredAt', 'updatedAt', 'lastLoginAt', 'loginCount'])
+        && strOk(d, ch, 'name', 80) && strOk(d, ch, 'phone', 20) && strOk(d, ch, 'email', 120)
+        && strOk(d, ch, 'address', 200) && strOk(d, ch, 'branch', 200) && strOk(d, ch, 'provider', 30)
+        && (!ch.hasAny(['photo']) || !('photo' in d)
+            || (d.photo is string && d.photo.size() < 200000 && d.photo.matches('data:image/(jpeg|png|webp);base64,[A-Za-z0-9+/=]+')))
+        && (!ch.hasAny(['photoURL']) || !('photoURL' in d)
+            || (isStr(d.photoURL, 1000) && d.photoURL.matches('https://[a-z0-9.-]+[.]googleusercontent[.]com/.*')))
+        && (!ch.hasAny(['loginCount']) || d.loginCount is int)
+        && tsOk(d, ch, 'photoUpdatedAt') && tsOk(d, ch, 'createdAt') && tsOk(d, ch, 'registeredAt')
+        && tsOk(d, ch, 'updatedAt') && tsOk(d, ch, 'lastLoginAt');
+    }
+    function orderOk(code) {
+      let d = request.resource.data;
+      return d.keys().hasOnly(['code', 'createdAt', 'createdAtLocal', 'uid', 'customer', 'delivery', 'payment',
+                               'note', 'items', 'totalText', 'totalAmount', 'status', 'emailSent'])
+        && d.keys().hasAll(['code', 'customer', 'items', 'delivery', 'payment'])
+        && d.code == code && isStr(d.code, 40)
+        && d.status == 'pending'
+        && d.customer is map && isStr(d.customer.name, 80) && d.customer.name.size() > 0 && isStr(d.customer.phone, 20)
+        && d.delivery is map && d.delivery.method in ['pickup', 'ship']
+        && isStr(d.payment, 60)
+        && (!('note' in d) || isStr(d.note, 500))
+        && (!('totalText' in d) || isStr(d.totalText, 40))
+        && (!('totalAmount' in d) || d.totalAmount == null || (d.totalAmount is number && d.totalAmount >= 0 && d.totalAmount < 100000000))
+        && d.items is list && d.items.size() > 0 && d.items.size() <= 50;
     }
 
-    // Customer profiles: owners read/write their own document (not moderation fields); admin full access.
+    // Customer profiles: owners read/write their own document (validated fields only); admin full access.
     match /users/{uid} {
       allow read: if (signedIn() && request.auth.uid == uid) || isAdmin();
-      allow create: if isAdmin() || (signedIn() && request.auth.uid == uid && !touchesModeration());
-      allow update: if isAdmin() || (signedIn() && request.auth.uid == uid && !isBanned() && !touchesModeration());
+      allow create: if isAdmin() || (signedIn() && request.auth.uid == uid && !touchesModeration() && profileOk());
+      allow update: if isAdmin() || (signedIn() && request.auth.uid == uid && !isBanned() && !touchesModeration() && profileOk());
       allow delete: if isAdmin() || (signedIn() && request.auth.uid == uid && !isBanned());
     }
 
-    // Orders: verified, non-banned customers create their own orders; admin manages all.
+    // Orders: verified, non-banned customers create their own (validated) orders; admin manages all.
     match /orders/{code} {
       allow create: if signedIn()
         && request.auth.token.email_verified == true
         && !isBanned()
         && request.resource.data.uid == request.auth.uid
-        && request.resource.data.keys().hasAll(['code', 'customer', 'items', 'delivery', 'payment'])
-        && request.resource.data.code == code
-        && request.resource.data.status == 'pending'
-        && request.resource.data.items is list
-        && request.resource.data.items.size() > 0 && request.resource.data.items.size() <= 50;
+        && orderOk(code);
       allow read: if isAdmin() || (signedIn() && resource.data.uid == request.auth.uid);
       // customers may only cancel their own order while it is still "pending" (not yet confirmed)
       allow update: if isAdmin() || (signedIn()

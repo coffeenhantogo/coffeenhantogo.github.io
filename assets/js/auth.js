@@ -12,8 +12,17 @@
   const N = window.NHAN;
   const V = "10.12.2";
   const base = `https://www.gstatic.com/firebasejs/${V}`;
+  // Subresource Integrity: the browser refuses to run a Firebase file whose content was altered.
+  // (Hashes are for v10.12.2 – recompute them if V changes.)
+  const SRI = {
+    "firebase-app-compat.js": "sha384-AQ3POAMqIhwS81FrUH95ekxqBZHeP5tG2JfEL3+7GuTtfRLWnrRh32UxwzM+//A9",
+    "firebase-auth-compat.js": "sha384-TnlRYaR4JYz/lpaGuaiU61PjNberSA4vjLjtF+oRC/IkohkJqnWxw5EmDSOt1vA1",
+    "firebase-firestore-compat.js": "sha384-qn4Jh88HhJA8dplNQyGjOh9OGI4izVhrfj/qIFgaKcdgOE06pXqIKGlsCILZcLAC",
+  };
   const load = (src) => new Promise((ok, fail) => {
     const s = document.createElement("script");
+    const sri = SRI[src.split("/").pop()];
+    if (sri) { s.integrity = sri; s.crossOrigin = "anonymous"; }
     s.src = src; s.onload = ok; s.onerror = () => fail(new Error(`load ${src}`));
     document.head.appendChild(s);
   });

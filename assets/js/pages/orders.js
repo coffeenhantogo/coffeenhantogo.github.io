@@ -69,7 +69,7 @@ Chỉ hủy được khi quán chưa xác nhận đơn.`)) return;
     let o = N.orders.get(code);
     const api = await N.fbReady;
     let remote = null;
-    if (api && api.user && code) { try { const s = await api.db.collection("orders").doc(code).get(); if (s.exists) remote = s.data(); } catch { /* not allowed / offline */ } }
+    if (api && api.user && code) { try { const s = await api.db.collection("orders").doc(code).get(); if (s.exists) remote = N.cleanOrder(s.data()); } catch { /* not allowed / offline */ } }
     if (!o && remote) o = { ...remote, createdAt: remote.createdAtLocal, synced: true };
     if (!o) {
       sRoot.innerHTML = `<div class="success-card"><h1>Không tìm thấy đơn hàng</h1><p class="lead">${api && !api.user ? `Hãy <a href="dang-nhap.html?next=${encodeURIComponent("dat-hang-thanh-cong.html?ma=" + (code || ""))}" style="font-weight:800;text-decoration:underline">đăng nhập</a> để xem đơn của bạn.` : `Vui lòng gọi ${S.phoneDisplay} để được hỗ trợ.`}</p><div class="success-actions"><a class="btn btn-lime" href="don-hang.html">Đơn hàng của tôi</a><a class="btn btn-outline" href="${N.HOME}">Về trang chủ</a></div></div>`;
@@ -175,7 +175,7 @@ Chỉ hủy được khi quán chưa xác nhận đơn.`)) return;
     N.fbReady.then((api) => {
       if (!api || !api.user) { renderLocal(); return; }
       api.db.collection("orders").where("uid", "==", api.user.uid).limit(100).onSnapshot((snap) => {
-        const list = snap.docs.map((d) => d.data()).sort((a, b) => (b.createdAtLocal || "").localeCompare(a.createdAtLocal || ""));
+        const list = snap.docs.map((d) => N.cleanOrder(d.data())).sort((a, b) => (b.createdAtLocal || "").localeCompare(a.createdAtLocal || ""));
         renderLive(list);
       }, () => renderLocal());
     });

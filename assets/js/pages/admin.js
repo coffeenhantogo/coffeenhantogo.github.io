@@ -156,10 +156,11 @@
       $("[data-list]").innerHTML = list.length ? list.map((o) => {
         const [st, cls] = STATUS[o.status] || STATUS.pending;
         const d = dateOf(o);
+        const pc = ["pending", "confirmed"].includes(o.status) ? N.checkOrderPrice(o) : { ok: true };
         const where = o.delivery.method === "ship" ? `🛵 Giao: ${N.esc(o.delivery.address)}` : `🏠 Nhận tại: ${N.esc(o.delivery.branch)}`;
         return `<article class="admin-order ${cls}">
           <div class="ad-top">
-            <div><b class="ad-code">${N.esc(o.code)}</b> <span class="st ${cls}">${st}</span>${o.cancelledBy === "customer" ? ' <span class="st st-cancel">Khách tự hủy</span>' : ""}${o.uid ? ' <span class="st st-ok">Thành viên</span>' : ""}</div>
+            <div><b class="ad-code">${N.esc(o.code)}</b> <span class="st ${cls}">${st}</span>${o.cancelledBy === "customer" ? ' <span class="st st-cancel">Khách tự hủy</span>' : ""}${o.uid ? ' <span class="st st-ok">Thành viên</span>' : ""}${pc.ok ? "" : ' <span class="st st-warn" title="Tổng tiền khách gửi khác với giá trong thực đơn – kiểm tra trước khi xác nhận">⚠ Giá không khớp</span>'}</div>
             <span class="ad-time">${fmtDT(d)}</span>
           </div>
           <div class="ad-body">
@@ -168,7 +169,7 @@
           </div>
           ${o.note ? `<p class="ad-note">📝 ${N.esc(o.note)}</p>` : ""}
           <div class="ad-foot">
-            <span>${N.esc(o.payment)} · <b>${N.esc(o.totalText)}</b></span>
+            <span>${N.esc(o.payment)} · <b>${N.esc(o.totalText)}</b>${pc.ok ? "" : ` <em class="ad-pricewarn">Thực đơn tính: ${pc.expected != null ? N.fmtVND(pc.expected) : "có món không còn trong thực đơn"}</em>`}</span>
             <div class="ad-actions">
               <button class="btn btn-outline btn-sm" type="button" data-print="${N.esc(o.code)}">In phiếu</button>
               <a class="btn btn-outline btn-sm" href="https://zalo.me/${N.esc(o.customer.phone)}" target="_blank" rel="noopener">Zalo khách</a>
@@ -519,15 +520,15 @@
 
     /* ---------------- realtime data ---------------- */
     api.db.collection("orders").orderBy("createdAt", "desc").limit(500).onSnapshot((snap) => {
-      const added = snap.docChanges().filter((c) => c.type === "added").length;
-      if (!firstLoad) snap.docChanges().forEach((c) => { const d = c.doc.data(); if (c.type === "modified" && d.status === "cancelled" && d.cancelledBy === "customer") { beep(); N.toast(`Khách đã hủy đơn ${d.code}`); } });
-      orders = snap.docs.map((d) => d.data());
+      const added = snap.docChanges().filter((c) => c.type === "added").length; // (data below is re-read through N.cleanOrder)
+      if (!firstLoad) snap.docChanges().forEach((c) => { const d = N.cleanOrder(c.doc.data()); if (c.type === "modified" && d.status === "cancelled" && d.cancelledBy === "customer") { beep(); N.toast(`Khách đã hủy đơn ${d.code}`); } });
+      orders = snap.docs.map((d) => N.cleanOrder(d.data()));
       if (!firstLoad && added) { beep(); N.toast(`Có ${added} đơn mới!`); }
       firstLoad = false;
       renderOrders(); renderUsers(); renderOverview();
     }, (err) => { $("[data-list]").innerHTML = `<div class="form-alert err">${N.esc(api.errorText(err))}</div>`; });
     api.db.collection("users").limit(1000).onSnapshot((snap) => {
-      users = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+      users = snap.docs.map((d) => ({ ...N.cleanUser(d.data()), id: d.id }));
       renderUsers(); renderOverview();
     }, (err) => { $("[data-ulist]").innerHTML = `<div class="form-alert err">${N.esc(api.errorText(err))}</div>`; });
   });

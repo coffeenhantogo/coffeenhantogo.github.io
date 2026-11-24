@@ -53,8 +53,8 @@
         <form class="auth-form" data-newpw novalidate>
           <div class="form-alert" data-msg hidden></div>
           <label class="field" data-f="password"><span>Mật khẩu mới</span>
-            <span class="pw-wrap"><input name="password" type="password" autocomplete="new-password" placeholder="Ít nhất 6 ký tự"><button type="button" class="pw-toggle" data-pw aria-label="Hiện mật khẩu">Hiện</button></span>
-            <span class="err">Mật khẩu cần ít nhất 6 ký tự.</span></label>
+            <span class="pw-wrap"><input name="password" type="password" autocomplete="new-password" placeholder="Ít nhất 8 ký tự, có chữ và số"><button type="button" class="pw-toggle" data-pw aria-label="Hiện mật khẩu">Hiện</button></span>
+            <span class="err">Mật khẩu cần ít nhất 8 ký tự, gồm cả chữ và số.</span></label>
           <label class="field" data-f="confirm"><span>Nhập lại mật khẩu mới</span><input name="confirm" type="password" autocomplete="new-password"><span class="err">Mật khẩu nhập lại không khớp.</span></label>
           <button class="btn btn-lime btn-block" type="submit">Lưu mật khẩu mới</button>
         </form>`;
@@ -63,7 +63,7 @@
       f.addEventListener("submit", async (e) => {
         e.preventDefault();
         const pw = f.password.value;
-        const bad1 = pw.length < 6, bad2 = pw !== f.confirm.value;
+        const bad1 = !N.strongPw(pw), bad2 = pw !== f.confirm.value;
         f.querySelector('[data-f="password"]').classList.toggle("has-error", bad1);
         f.querySelector('[data-f="confirm"]').classList.toggle("has-error", bad2);
         if (bad1 || bad2) return;
