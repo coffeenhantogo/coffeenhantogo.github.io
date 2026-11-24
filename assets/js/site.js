@@ -623,35 +623,54 @@
   // Google photo: top-level photoURL, or the linked Google provider's photo (password accounts that linked Google)
   N.googlePhoto = (u) => (u && (u.photoURL || ((u.providerData || []).find((p) => p && p.providerId === "google.com") || {}).photoURL)) || "";
   const SHIELD = (w) => `<svg viewBox="0 0 24 24" width="${w}" height="${w}" aria-hidden="true"><path d="M12 3 5 6v5c0 4.4 3 8.3 7 9.5 4-1.2 7-5.1 7-9.5V6z" fill="currentColor"/><path d="m9 12 2 2 4-4" fill="none" stroke="#A8D636" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+  /* last signed-in account (display only) so the header shows the name/avatar instantly on reload,
+     before Firebase finishes starting; Firebase then confirms it or switches back to "Đăng nhập". */
+  const ACCT_KEY = "nhan-acct-v1";
+  const setHTML = (el, html) => { if (el._html !== html) { el._html = html; el.innerHTML = html; } }; // no avatar flicker
   N.updateAccountUI = (u, api) => {
     const first = u ? (u.displayName || u.email || "?").trim() : "";
-    const photo = u ? N.avatarImg((api && api.photo) || N.googlePhoto(u)) : ""; // custom upload → Google photo → initial
+    const photoUrl = u ? (api && api.photo) || N.googlePhoto(u) : "";
+    const photo = u ? N.avatarImg(photoUrl).replace(' loading="lazy"', "") : ""; // custom upload → Google photo → initial
     const mail = u ? esc(u.email || "") : "";
+    const isAdm = !!(u && api && api.isAdmin(u));
+    try {
+      if (u) localStorage.setItem(ACCT_KEY, JSON.stringify({ displayName: u.displayName || "", email: u.email || "", photo: photoUrl || "", admin: isAdm }));
+      else if (!N._acctFromCache) localStorage.removeItem(ACCT_KEY);
+    } catch { /* storage unavailable / full */ }
     document.querySelectorAll("[data-account-link]").forEach((a) => {
       if (u) {
-        const admin = !!(api && api.isAdmin(u));
+        const admin = isAdm;
         a.href = admin ? "quan-tri.html" : "tai-khoan.html";
-        a.dataset.tip = admin ? "Quản trị" : "Tài khoản của tôi";
         a.setAttribute("aria-label", admin ? "Trang quản trị" : "Tài khoản của tôi");
         a.classList.add("is-in");
         a.classList.toggle("is-admin", admin);
-        a.dataset.tip = u.email || a.dataset.tip;
-        a.innerHTML = admin
+        a.dataset.tip = u.email || (admin ? "Quản trị" : "Tài khoản của tôi");
+        setHTML(a, admin
           ? `<span class="hb-avatar hb-admin${photo ? " has-photo" : ""}">${SHIELD(17)}${photo}${photo ? `<i class="hb-badge">${SHIELD(10)}</i>` : ""}</span><span class="hb-admin-label"><span class="hb-line"><b>${esc(first.split(/[\s@]/)[0])}</b><em class="hb-role">Quản trị</em></span><small class="hb-mail">${mail}</small></span>`
-          : `<span class="hb-avatar${photo ? " has-photo" : ""}">${esc(givenName(first).charAt(0).toUpperCase())}${photo}</span><span class="hb-admin-label hb-user-label"><span class="hb-line"><b>${esc(givenName(first))}</b></span><small class="hb-mail">${mail}</small></span>`;
+          : `<span class="hb-avatar${photo ? " has-photo" : ""}">${esc(givenName(first).charAt(0).toUpperCase())}${photo}</span><span class="hb-admin-label hb-user-label"><span class="hb-line"><b>${esc(givenName(first))}</b></span><small class="hb-mail">${mail}</small></span>`);
         a.classList.toggle("is-member", !admin);
       } else {
-        a.href = "dang-nhap.html"; a.dataset.tip = "Đăng nhập"; a.classList.remove("is-in"); a.innerHTML = IC.user;
+        a.href = "dang-nhap.html"; a.dataset.tip = "Đăng nhập"; a.setAttribute("aria-label", "Đăng nhập");
+        a.classList.remove("is-in", "is-admin", "is-member"); setHTML(a, IC.user);
       }
     });
     document.querySelectorAll("[data-account-mlink]").forEach((a) => {
-      const adm = !!(u && api && api.isAdmin(u));
+      const adm = isAdm;
       a.href = !u ? "dang-nhap.html" : adm ? "quan-tri.html" : "tai-khoan.html";
       a.classList.toggle("m-acct", !!u);
-      a.innerHTML = !u ? "Đăng nhập / Đăng ký"
-        : `<span class="hb-avatar${adm ? " hb-admin" : ""}${photo ? " has-photo" : ""}">${adm && !photo ? SHIELD(15) : esc(givenName(first).charAt(0).toUpperCase())}${photo}</span><span class="m-acct-txt"><b>${adm ? "Trang quản trị" : `Tài khoản (${esc(givenName(first))})`}</b><small>${mail}</small></span>`;
+      setHTML(a, !u ? "Đăng nhập / Đăng ký"
+        : `<span class="hb-avatar${adm ? " hb-admin" : ""}${photo ? " has-photo" : ""}">${adm && !photo ? SHIELD(15) : esc(givenName(first).charAt(0).toUpperCase())}${photo}</span><span class="m-acct-txt"><b>${adm ? "Trang quản trị" : `Tài khoản (${esc(givenName(first))})`}</b><small>${mail}</small></span>`);
     });
   };
+  // paint the cached account right away (only when accounts are enabled)
+  if (N.FIREBASE && N.FIREBASE.apiKey) {
+    const c = store.get(ACCT_KEY, null);
+    if (c && c.email) {
+      N._acctFromCache = true;
+      N.updateAccountUI({ displayName: c.displayName, email: c.email, photoURL: c.photo, providerData: [] }, { isAdmin: () => !!c.admin, photo: null });
+      N._acctFromCache = false;
+    }
+  }
   // password-reset email throttle: max 1 request / 60s per browser (each new link invalidates the previous one)
   N.resetCooldown = () => {
     const k = "nhan-reset-at", now = Date.now();
