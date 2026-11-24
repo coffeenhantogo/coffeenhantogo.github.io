@@ -769,7 +769,9 @@ a.tb-item:hover { color: var(--lime); }
 .js-anim [data-anim="zoom"] { transform: scale(.9); }
 .js-anim [data-anim="blur"] { transform: translateY(24px); filter: blur(10px); }
 .js-anim [data-anim="clip"] { opacity: 1; clip-path: inset(100% 0 0 0 round 6px); }
-.js-anim [data-anim].in { opacity: 1; transform: none; filter: none; clip-path: inset(0 0 0 0 round 0); }
+.js-anim [data-anim].in { opacity: 1; transform: none; filter: none; clip-path: none; }
+/* only the "clip" reveal animates clip-path; others must not clip their own hover lift / shadow */
+.js-anim [data-anim="clip"].in { clip-path: inset(0 0 0 0 round 0); }
 /* images inside revealed blocks settle from a slight zoom */
 .js-anim [data-anim] .p-media img, .js-anim [data-anim] .post-media img, .js-anim [data-anim="clip"] .tile-img { transform: scale(1.18); transition: transform 1.6s var(--ease); }
 .js-anim [data-anim].in .p-media img, .js-anim [data-anim].in .post-media img, .js-anim [data-anim="clip"].in .tile-img { transform: scale(1); }
@@ -1506,3 +1508,12 @@ img.img-ready { opacity: 1; transition: opacity .7s ease; }
 .hb-avatar > img, .acct-avatar > img, .ct-av > img { animation: av-in .25s ease both; }
 @keyframes av-in { from { opacity: 0; } to { opacity: 1; } }
 @media (prefers-reduced-motion: reduce) { .hb-avatar > img, .acct-avatar > img, .ct-av > img { animation: none; } }
+
+/* "Xem tất cả …" buttons under home sections: solid ink fill + arrow nudge on hover */
+.section-more .btn-outline { height: 50px; padding: 0 30px; border: 1.5px solid var(--brown); color: var(--brown); background: transparent; }
+.section-more .btn-outline span { display: inline-block; transition: transform .35s var(--ease); }
+@media (hover: hover) and (pointer: fine) {
+  .section-more .btn-outline:hover { background: var(--ink); border-color: var(--ink); color: #fff; transform: translateY(-3px); box-shadow: 0 12px 26px rgba(17,17,17,.2); }
+  .section-more .btn-outline:hover span { transform: translateX(5px); color: var(--lime); }
+}
+.section-more .btn-outline:focus-visible { background: var(--ink); border-color: var(--ink); color: #fff; }
