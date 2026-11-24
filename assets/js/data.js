@@ -44,7 +44,14 @@ NHAN.STORE = {
    Paste the "firebaseConfig" object from Firebase console → Project settings → Your apps → Web.
    (The web config is public by design; access is protected by firestore.rules.)
    Leave as null to keep the site working without accounts. */
-NHAN.FIREBASE = null;
+NHAN.FIREBASE = {
+  apiKey: "AIzaSyDlR5homdQ-az8oUXfLJd99CuiJRNCr5dg",
+  authDomain: "coffeenhantogo.firebaseapp.com",
+  projectId: "coffeenhantogo",
+  storageBucket: "coffeenhantogo.firebasestorage.app",
+  messagingSenderId: "652189805201",
+  appId: "1:652189805201:web:899d9788406cb3d823ed30",
+};
 /* Emails allowed to open quan-tri.html (must also be listed in firestore.rules). */
 NHAN.ADMIN_EMAILS = ["coffeenhan178@gmail.com"];
 
