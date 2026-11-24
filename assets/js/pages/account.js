@@ -53,7 +53,7 @@
 
       root.querySelector("[data-signout]").addEventListener("click", async () => { await api.signOut(); N.toast("Đã đăng xuất"); location.replace(N.HOME); });
       root.querySelector("[data-verify]")?.addEventListener("click", async (e) => { try { await u.sendEmailVerification(); e.target.textContent = "Đã gửi – kiểm tra hộp thư"; } catch (err) { N.toast(api.errorText(err)); } });
-      root.querySelector("[data-reset]")?.addEventListener("click", async (e) => { try { await api.reset(u.email); e.target.textContent = `Đã gửi link đổi mật khẩu tới ${u.email}`; } catch (err) { N.toast(api.errorText(err)); } });
+      root.querySelector("[data-reset]")?.addEventListener("click", async (e) => { const b = e.target; if (b.disabled) return; if (!N.resetCooldown()) { N.toast("Vui lòng chờ 1 phút rồi gửi lại – chỉ link mới nhất có hiệu lực"); return; } b.disabled = true; try { await api.reset(u.email); b.innerHTML = `Đã gửi link tới ${N.esc(u.email)}.<br><small>Mở email <b>mới nhất</b> trong 1 giờ · mỗi link dùng 1 lần</small>`; setTimeout(() => (b.disabled = false), 60000); } catch (err) { b.disabled = false; N.toast(api.errorText(err)); } });
 
       const form = root.querySelector("[data-profile]"), pmsg = root.querySelector("[data-pmsg]");
       form.addEventListener("submit", async (e) => {

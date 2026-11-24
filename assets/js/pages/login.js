@@ -84,8 +84,9 @@
       e.preventDefault(); hideMsg();
       const f = forms.reset, email = f.email.value.trim();
       if (setErr(f, "email", !EMAIL_RE.test(email))) return;
+      if (!N.resetCooldown()) { show("warn", "Bạn vừa yêu cầu link. Vui lòng chờ 1 phút rồi thử lại – và chỉ mở <b>email mới nhất</b>."); return; }
       busy(f, true, "Đang gửi…");
-      try { await api.reset(email); show("ok", `Đã gửi link đặt lại mật khẩu tới <b>${N.esc(email)}</b>. Kiểm tra cả hộp thư Spam nhé.`); }
+      try { await api.reset(email); show("ok", `Đã gửi link đặt lại mật khẩu tới <b>${N.esc(email)}</b>. Mở <b>email mới nhất</b> trong vòng 1 giờ (mỗi link chỉ dùng được 1 lần). Kiểm tra cả hộp thư Spam nhé.`); }
       catch (err) { show("err", api.errorText(err)); }
       busy(f, false);
     });

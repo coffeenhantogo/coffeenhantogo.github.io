@@ -580,6 +580,12 @@
       a.textContent = u ? `Tài khoản (${first.split(/[\s@]/)[0]})` : "Đăng nhập / Đăng ký";
     });
   };
+  // password-reset email throttle: max 1 request / 60s per browser (each new link invalidates the previous one)
+  N.resetCooldown = () => {
+    const k = "nhan-reset-at", now = Date.now();
+    try { const last = +localStorage.getItem(k) || 0; if (now - last < 60000) return false; localStorage.setItem(k, String(now)); } catch { /* ignore */ }
+    return true;
+  };
   N.requireConfig = (root) => {
     root.innerHTML = `<div class="co-card" style="max-width:620px;margin:0 auto;text-align:center"><div class="cart-empty-ic">${IC.user.replace('width="20" height="20"', 'width="34" height="34"')}</div><h2 style="font-size:22px;color:var(--brown);font-weight:800">Tính năng tài khoản đang được thiết lập</h2><p style="color:var(--muted);margin:8px 0 18px">Vui lòng thử lại sau ít phút, hoặc đặt nhanh qua Zalo / điện thoại.</p><a class="btn btn-lime" href="thuc-don.html">Đặt món ngay</a></div>`;
   };

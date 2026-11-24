@@ -9,3 +9,4 @@ Sitemap: https://coffeenhantogo.github.io/sitemap.xml
 Disallow: /dang-nhap.html
 Disallow: /tai-khoan.html
 Disallow: /quan-tri.html
+Disallow: /dat-lai-mat-khau.html
