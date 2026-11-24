@@ -91,16 +91,43 @@
       };
       paintAv();
       document.addEventListener("nhan:photo", paintAv);
+      /* find the real content of an image: ignore a plain margin (same colour as all 4 corners) or
+         transparent padding – so a logo with empty space around it fills the round avatar */
+      const contentBox = (img) => {
+        const W = img.naturalWidth, H = img.naturalHeight, k = Math.min(1, 400 / Math.max(W, H));
+        const w = Math.max(1, Math.round(W * k)), h = Math.max(1, Math.round(H * k));
+        const cv = document.createElement("canvas"); cv.width = w; cv.height = h;
+        const g = cv.getContext("2d", { willReadFrequently: true }); g.drawImage(img, 0, 0, w, h);
+        let d; try { d = g.getImageData(0, 0, w, h).data; } catch { return { trimmed: false, fill: "#fff" }; }
+        const px = (x, y) => { const i = (y * w + x) * 4; return [d[i], d[i + 1], d[i + 2], d[i + 3]]; };
+        const corners = [px(0, 0), px(w - 1, 0), px(0, h - 1), px(w - 1, h - 1)];
+        const bg = [0, 1, 2, 3].map((j) => corners.reduce((sum, c) => sum + c[j], 0) / 4);
+        const near = (a, b, t) => Math.abs(a[0] - b[0]) + Math.abs(a[1] - b[1]) + Math.abs(a[2] - b[2]) < t;
+        const clear = bg[3] < 20;
+        const fill = clear ? "#fff" : `rgb(${bg.slice(0, 3).map(Math.round).join(",")})`;
+        if (!clear && !corners.every((c) => near(c, bg, 60))) return { trimmed: false, fill: "#fff" }; // a normal photo
+        const isBg = (p) => p[3] < 20 || (!clear && near(p, bg, 70));
+        let x0 = w, y0 = h, x1 = -1, y1 = -1;
+        for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
+          if (!isBg(px(x, y))) { if (x < x0) x0 = x; if (x > x1) x1 = x; if (y < y0) y0 = y; if (y > y1) y1 = y; }
+        }
+        if (x1 < 0 || (x1 - x0 < w * 0.15 && y1 - y0 < h * 0.15)) return { trimmed: false, fill };
+        return { trimmed: true, fill, x: x0 / k, y: y0 / k, w: (x1 - x0 + 1) / k, h: (y1 - y0 + 1) / k };
+      };
       const toAvatar = (file) => new Promise((ok, fail) => {
         if (!file || !/^image\//.test(file.type)) return fail(new Error("Vui lòng chọn một tệp ảnh (JPG, PNG, WEBP)."));
         if (file.size > 20e6) return fail(new Error("Ảnh quá lớn (tối đa 20MB)."));
         const url = URL.createObjectURL(file), img = new Image();
         img.onload = () => {
-          const S = 256, s = Math.min(img.naturalWidth, img.naturalHeight);
+          const W = img.naturalWidth, H = img.naturalHeight, S = 256;
+          const box = contentBox(img);
+          // logos / images on a plain background: fit the content box; photos: centre square crop
+          const s = box.trimmed ? Math.max(box.w, box.h) : Math.min(W, H);
+          const cx = box.trimmed ? box.x + box.w / 2 : W / 2, cy = box.trimmed ? box.y + box.h / 2 : H / 2;
           const c = document.createElement("canvas"); c.width = c.height = S;
-          const g = c.getContext("2d"); g.fillStyle = "#fff"; g.fillRect(0, 0, S, S);
+          const g = c.getContext("2d"); g.fillStyle = box.fill; g.fillRect(0, 0, S, S);
           g.imageSmoothingQuality = "high";
-          g.drawImage(img, (img.naturalWidth - s) / 2, (img.naturalHeight - s) / 2, s, s, 0, 0, S, S);
+          g.drawImage(img, cx - s / 2, cy - s / 2, s, s, 0, 0, S, S);
           URL.revokeObjectURL(url);
           let q = 0.86, d = c.toDataURL("image/jpeg", q);
           while (d.length > 90000 && q > 0.45) { q -= 0.12; d = c.toDataURL("image/jpeg", q); }
