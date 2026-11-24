@@ -59,6 +59,8 @@
   filtersEl.addEventListener("click", (e) => { const c = e.target.closest("[data-type]"); if (c) { type = c.dataset.type; render(); } });
   qEl.addEventListener("input", render);
   sortEl.addEventListener("change", render);
+  document.querySelector(".toolbar").insertAdjacentHTML("beforebegin", N.howToOrderHTML);
+  N.anim(".how-order li", "up");
   N.anim(".toolbar", "up", { stagger: false });
   render();
   document.addEventListener("nhan:shop", render);

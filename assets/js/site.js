@@ -289,14 +289,14 @@
   N.cart = {
     items: () => cart.slice(),
     count: () => cart.reduce((s, i) => s + i.qty, 0),
-    add(id, qty = 1, opts = {}, note = "") {
+    add(id, qty = 1, opts = {}, note = "", quiet = false) {
       const key = keyOf(id, opts, note);
       const it = cart.find((i) => i.key === key);
       it ? (it.qty += qty) : cart.push({ key, id, qty, opts, note });
       saveCart();
       const btn = document.querySelector(".cart-btn");
       if (btn) { btn.classList.remove("bump"); void btn.offsetWidth; btn.classList.add("bump"); }
-      N.toast(`Đã thêm “${byId[id].name}” vào giỏ`);
+      if (!quiet) N.toast(`Đã thêm “${byId[id].name}” vào giỏ`);
     },
     setQty(key, qty) { cart = qty <= 0 ? cart.filter((i) => i.key !== key) : cart.map((i) => (i.key === key ? { ...i, qty: Math.min(99, qty) } : i)); saveCart(); },
     remove(key) { this.setQty(key, 0); },
@@ -354,12 +354,17 @@
   /* ---------- option picker (quick add) ---------- */
   const defaultOpt = (k, vals) => (k === "sugar" ? (vals.includes("Vừa") ? "Vừa" : vals[0]) : k === "ice" ? (vals.includes("Bình thường") ? "Bình thường" : vals[0]) : vals[0]);
   N.defaultOpts = (p) => Object.fromEntries(Object.entries(p.options || {}).map(([k, v]) => [k, defaultOpt(k, v)]));
+  // option groups as numbered steps; size chips show their own price
+  const STEP_LABEL = { size: "Chọn size", sugar: "Chọn độ ngọt", ice: "Chọn lượng đá" };
   N.optionsFieldsHTML = (p, selected = N.defaultOpts(p), name = "opt") =>
     Object.entries(p.options || {}).map(([k, vals]) => `
       <fieldset class="opt-group">
-        <legend>${N.OPTION_LABELS[k] || k}</legend>
+        <legend><span class="og-n" aria-hidden="true"></span>${STEP_LABEL[k] || N.OPTION_LABELS[k] || k}${k === "size" && vals.length === 1 ? ' <small class="og-note">(món này chỉ có 1 size)</small>' : ""}</legend>
         <div class="chips">
-          ${vals.map((v) => `<label class="chip"><input type="radio" name="${name}-${k}" value="${esc(v)}" ${selected[k] === v ? "checked" : ""} data-opt-key="${k}"><span>${esc(v)}</span></label>`).join("")}
+          ${vals.map((v) => {
+            const pr = k === "size" ? unitPrice(p, { size: v }) : null;
+            return `<label class="chip${pr != null ? " chip-price" : ""}"><input type="radio" name="${name}-${k}" value="${esc(v)}" ${selected[k] === v ? "checked" : ""} data-opt-key="${k}"><span>${esc(v)}${pr != null ? `<small>${fmtVND(pr)}</small>` : ""}</span></label>`;
+          }).join("")}
         </div>
       </fieldset>`).join("");
   N.readOpts = (root) => {
@@ -373,29 +378,64 @@
     if (!p) return;
     if (p.soldOut) { N.toast(`“${p.name}” đang tạm hết – bạn chọn món khác nhé`); return; }
     if (!N.shop.open) N.toast("Quán đang tạm ngưng nhận đơn online – bạn vẫn có thể thêm vào giỏ");
-    if (!p.options || !Object.keys(p.options).length) { N.fly && N.fly(srcImg); N.cart.add(id); return; }
+    const hasOpts = !!(p.options && Object.keys(p.options).length);
     optBox.innerHTML = `
       <div class="opt-head">
-        <img src="${img(p.img)}" alt="">
-        <div><p class="p-cat">${esc(p.cat)}</p><h3>${esc(p.name)}</h3><p class="opt-price">${priceText(p)}</p></div>
-        <button class="icon-btn" aria-label="Đóng" data-close>&times;</button>
+        <a class="oh-img" href="${productUrl(p)}"><img src="${img(p.img)}" alt="${esc(p.name)}"></a>
+        <div class="oh-text">
+          <p class="p-cat">${esc(p.cat)}</p>
+          <h3>${esc(p.name)}</h3>
+          ${p.short ? `<p class="oh-desc">${esc(p.short)}</p>` : ""}
+          <a class="oh-more" href="${productUrl(p)}">Xem chi tiết món <span aria-hidden="true">→</span></a>
+        </div>
+        <button class="icon-btn oh-close" type="button" aria-label="Đóng" data-close>&times;</button>
       </div>
       <form class="opt-form" data-opt-form>
+        ${hasOpts ? `<p class="opt-hint">Chọn theo ý bạn, sau đó bấm <b>Thêm vào giỏ</b> ở cuối.</p>` : ""}
         ${N.optionsFieldsHTML(p, N.defaultOpts(p), "q")}
-        <label class="field"><span>Ghi chú cho món (tùy chọn)</span><input type="text" name="note" maxlength="120" placeholder="VD: ít ngọt hơn, thêm đá riêng…"></label>
+        <label class="field opt-note"><span>Ghi chú cho món <small>(không bắt buộc)</small></span><input type="text" name="note" maxlength="120" placeholder="${p.type === "drink" ? "VD: đá để riêng, ít sữa…" : "VD: chia 2 túi nhỏ…"}"></label>
         <div class="opt-foot">
           <div class="qty qty-lg" role="group" aria-label="Số lượng"><button type="button" data-step="-1" aria-label="Giảm">−</button><input type="number" name="qty" value="1" min="1" max="99" aria-label="Số lượng"><button type="button" data-step="1" aria-label="Tăng">+</button></div>
-          <button class="btn btn-lime" type="submit">${IC.plus} Thêm vào giỏ</button>
+          <button class="btn btn-lime opt-submit" type="submit">${IC.plus}<span>Thêm vào giỏ</span><b data-opt-total></b></button>
         </div>
       </form>`;
     N.open("optionModal");
+    optBox.setAttribute("tabindex", "-1");
+    optBox.focus({ preventScroll: true }); // keyboard users start inside the dialog, no stray focus ring
     const form = optBox.querySelector("[data-opt-form]");
+    const qtyOf = () => Math.max(1, Math.min(99, parseInt(form.qty.value, 10) || 1));
+    const total = () => { const u = unitPrice(p, N.readOpts(form)); form.querySelector("[data-opt-total]").textContent = u != null ? fmtVND(u * qtyOf()) : ""; };
+    form.addEventListener("change", total);
+    form.addEventListener("input", total);
+    form.addEventListener("click", (e) => { if (e.target.closest("[data-step]")) setTimeout(total); });
+    total();
     form.addEventListener("submit", (e) => {
       e.preventDefault();
-      const qty = Math.max(1, Math.min(99, parseInt(form.qty.value, 10) || 1));
+      const qty = qtyOf(), opts = N.readOpts(form), note = form.note.value.trim();
+      const u = unitPrice(p, opts);
       N.fly && N.fly(optBox.querySelector(".opt-head img"));
-      N.cart.add(id, qty, N.readOpts(form), form.note.value.trim());
-      N.close();
+      N.cart.add(id, qty, opts, note, true);
+      const t = N.cart.total();
+      // confirmation with clear next steps
+      optBox.innerHTML = `
+        <div class="opt-done" role="status">
+          <button class="icon-btn oh-close" type="button" aria-label="Đóng" data-close>&times;</button>
+          <div class="od-ic"><svg viewBox="0 0 24 24" width="30" height="30" aria-hidden="true"><path d="m5 12.5 4.5 4.5L19 7.5" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+          <h3>Đã thêm vào giỏ hàng!</h3>
+          <div class="od-item">
+            <img src="${img(p.img)}" alt="">
+            <div><b>${qty} × ${esc(p.name)}</b>${optSummary(opts) || note ? `<small>${esc([optSummary(opts), note && `Ghi chú: ${note}`].filter(Boolean).join(" · "))}</small>` : ""}</div>
+            <span>${u != null ? fmtVND(u * qty) : ""}</span>
+          </div>
+          <p class="od-cart">Giỏ hàng hiện có <b>${N.cart.count()} món</b> · Tạm tính <b>${esc(t.text)}</b></p>
+          <div class="od-actions">
+            <button class="btn btn-outline" type="button" data-close>Chọn thêm món</button>
+            <a class="btn btn-lime" href="thanh-toan.html">Đặt hàng ngay <span aria-hidden="true">→</span></a>
+          </div>
+          <button class="od-link" type="button" data-open="cartDrawer">Xem / sửa giỏ hàng</button>
+        </div>`;
+      optBox.scrollTop = 0;
+      optBox.focus({ preventScroll: true });
     });
   };
   // qty steppers anywhere
@@ -415,32 +455,41 @@
   });
 
   /* ---------- product card ---------- */
-  const sizesLabel = (p) => {
-    const s = p.options && p.options.size;
-    if (s && s.length) return s.map((x) => x.replace(/^(Nhỏ|Lớn)\s*/, "")).join(" · ");
-    if (p.type === "ground") return "Gói 1kg";
-    return "";
+  // price per size, e.g. [Nhỏ 500ml 22.000 ₫] [Lớn 700ml 28.000 ₫]; single price → [Ly lớn 700ml 28.000 ₫] / [Gói 1kg …]
+  const priceChips = (p) => {
+    const rows = p.priceBy ? Object.entries(p.priceBy)
+      : [[p.type === "ground" ? "Gói 1kg" : (p.options && p.options.size && p.options.size[0]) || "Giá", p.price]];
+    // "Nhỏ 500ml" → <small>Nhỏ <i>500ml</i></small> (the ml part hides on narrow cards)
+    return rows.map(([k, v]) => `<span class="pc"><small>${esc(k).replace(/\s(\d+ml)$/, " <i>$1</i>")}</small><b>${v != null ? fmtVND(v) : "Liên hệ"}</b></span>`).join("");
   };
-  const priceBox = (p) => {
-    if (p.priceBy) return `<small>Từ</small><b>${fmtVND(Math.min(...Object.values(p.priceBy)))}</b>`;
-    if (p.price != null) return `<small>Giá</small><b>${fmtVND(p.price)}</b>`;
-    return `<small>Giá</small><b>Liên hệ</b>`;
-  };
-  N.card = (p) => `<article class="p-card${p.soldOut ? " is-soldout" : ""}">
-      <a class="p-media-wrap" href="${productUrl(p)}" aria-label="${esc(p.name)}">
+  N.card = (p) => {
+    const hasOpts = !!(p.options && Object.keys(p.options).length);
+    return `<article class="p-card${p.soldOut ? " is-soldout" : ""}">
+      <a class="p-media-wrap" href="${productUrl(p)}" aria-label="Xem chi tiết ${esc(p.name)}">
         ${p.soldOut ? `<span class="p-badge p-badge-out">Tạm hết</span>` : p.badge ? `<span class="p-badge">${esc(p.badge)}</span>` : ""}
         <span class="p-media"><img src="${img(p.img)}" alt="${esc(p.name)}" loading="lazy"></span>
+        <span class="p-view" aria-hidden="true">Xem chi tiết</span>
       </a>
       <div class="p-body">
-        <div class="p-meta"><span class="p-cat">${esc(p.cat)}</span>${sizesLabel(p) ? `<span class="p-sizes">${esc(sizesLabel(p))}</span>` : ""}</div>
+        <span class="p-cat">${esc(p.cat)}</span>
         <h3 class="p-name"><a href="${productUrl(p)}">${esc(p.name)}</a></h3>
         ${p.short ? `<p class="p-desc">${esc(p.short)}</p>` : ""}
-        <div class="p-foot">
-          <div class="p-pricebox">${priceBox(p)}</div>
-          <button class="p-add" type="button" data-add="${p.id}" ${p.soldOut ? `disabled aria-label="${esc(p.name)} đang tạm hết"` : `aria-label="Thêm ${esc(p.name)} vào giỏ"`}>${IC.plus}</button>
-        </div>
+        <div class="p-prices${p.priceBy ? "" : " one"}">${priceChips(p)}</div>
+        <button class="p-cta" type="button" data-add="${p.id}" ${p.soldOut ? "disabled" : ""} aria-label="${p.soldOut ? `${esc(p.name)} đang tạm hết` : `${hasOpts ? "Chọn" : "Thêm"} ${esc(p.name)}`}">
+          ${p.soldOut ? "Tạm hết" : `${IC.plus}<span>${hasOpts ? "Chọn món" : "Thêm vào giỏ"}</span>`}
+        </button>
       </div>
     </article>`;
+  };
+
+  /* "how to order" strip for the menu / shop pages */
+  N.howToOrderHTML = `
+    <ol class="how-order" aria-label="Cách đặt món">
+      <li><span>1</span><div><b>Chọn món</b><small>Bấm “Chọn món” ở ly bạn thích</small></div></li>
+      <li><span>2</span><div><b>Tùy chỉnh</b><small>Size, độ ngọt, lượng đá, ghi chú</small></div></li>
+      <li><span>3</span><div><b>Thêm vào giỏ</b><small>Giỏ hàng ở biểu tượng túi góc trên</small></div></li>
+      <li><span>4</span><div><b>Đặt hàng</b><small>Nhận tại quán hoặc giao tận nơi</small></div></li>
+    </ol>`;
 
   N.postCard = (a) => `<article class="post">
       <a class="post-media" href="bai-viet-chi-tiet.html?slug=${a.slug}"><img src="${img(a.img)}" alt="${esc(a.title)}" loading="lazy"><span class="post-tag">${esc(a.tag)}</span></a>
@@ -726,7 +775,7 @@
   // click ripple
   document.addEventListener("pointerdown", (e) => {
     if (reduced) return;
-    const b = e.target.closest(".btn, .btn-order, .fchip, .p-add, .mini-add, .tab");
+    const b = e.target.closest(".btn, .btn-order, .fchip, .p-add, .p-cta, .mini-add, .tab");
     if (!b) return;
     const r = b.getBoundingClientRect(), d = Math.max(r.width, r.height);
     const s = document.createElement("span");

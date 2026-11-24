@@ -74,6 +74,8 @@
   buildBoard();
   menuEl.after(board);
   N.anim([board], "up", { stagger: false });
+  document.querySelector(".toolbar").insertAdjacentHTML("beforebegin", N.howToOrderHTML);
+  N.anim(".how-order li", "up");
   N.anim(".toolbar", "up", { stagger: false });
   render();
   // admin changed prices / sold-out items → refresh
