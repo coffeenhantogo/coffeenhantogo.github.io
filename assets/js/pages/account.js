@@ -22,7 +22,7 @@
           <div class="acct-avatar">${N.esc((name || u.email || "?").charAt(0).toUpperCase())}</div>
           <div class="acct-hello">
             <span class="kicker">Tài khoản của tôi</span>
-            <h1>Xin chào, ${N.esc(name.split(" ").pop() || "bạn")}!</h1>
+            <h1>Xin chào, ${N.esc(name.split(" ").pop() || "bạn")}!${admin ? ' <span class="admin-tag">Quản trị</span>' : ""}</h1>
             <p>${N.esc(u.email || "")} ${u.emailVerified ? '<span class="st st-done">Đã xác thực email</span>' : '<span class="st st-new">Chưa xác thực email</span> <button type="button" class="auth-link" data-verify>Gửi lại email xác thực</button>'}</p>
           </div>
           <div class="acct-actions">

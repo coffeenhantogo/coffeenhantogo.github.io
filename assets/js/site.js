@@ -574,7 +574,7 @@
         a.classList.add("is-in");
         a.classList.toggle("is-admin", admin);
         a.innerHTML = admin
-          ? `<span class="hb-avatar hb-admin"><svg viewBox="0 0 24 24" width="17" height="17" aria-hidden="true"><path d="M12 3 5 6v5c0 4.4 3 8.3 7 9.5 4-1.2 7-5.1 7-9.5V6z" fill="currentColor"/><path d="m9 12 2 2 4-4" fill="none" stroke="#A8D636" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></span>`
+          ? `<span class="hb-avatar hb-admin"><svg viewBox="0 0 24 24" width="17" height="17" aria-hidden="true"><path d="M12 3 5 6v5c0 4.4 3 8.3 7 9.5 4-1.2 7-5.1 7-9.5V6z" fill="currentColor"/><path d="m9 12 2 2 4-4" fill="none" stroke="#A8D636" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span class="hb-admin-label"><b>${esc(first.split(/[\s@]/)[0])}</b><small>Quản trị</small></span>`
           : `<span class="hb-avatar">${esc(first.charAt(0).toUpperCase())}</span>`;
       } else {
         a.href = "dang-nhap.html"; a.dataset.tip = "Đăng nhập"; a.classList.remove("is-in"); a.innerHTML = IC.user;
