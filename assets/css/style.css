@@ -1977,3 +1977,7 @@ a.gx-note:hover { border-color: var(--lime-dark); box-shadow: 0 10px 24px rgba(5
 .mn-money { position: relative; display: block; }
 .mn-money .input { padding-right: 30px; font-variant-numeric: tabular-nums; letter-spacing: .01em; }
 .mn-money em { position: absolute; right: 12px; top: 50%; transform: translateY(-50%); font-style: normal; font-weight: 800; color: var(--muted); pointer-events: none; }
+/* admin hero badge: upright, round like the account avatar, bigger shield */
+.adm-badge { transform: none; border-radius: 50%; width: 84px; height: 84px; box-shadow: 0 0 0 4px rgba(255,255,255,.92), 0 12px 30px rgba(0,0,0,.35); }
+.adm-badge svg { width: 40px; height: 40px; }
+@media (max-width: 640px) { .adm-badge { width: 62px; height: 62px; } .adm-badge svg { width: 30px; height: 30px; } }
