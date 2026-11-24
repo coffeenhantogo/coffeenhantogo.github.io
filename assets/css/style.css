@@ -1376,3 +1376,8 @@ img.img-ready { opacity: 1; transition: opacity .7s ease; }
 .fchip-del { margin-left: 8px; color: var(--muted); border-style: dashed; }
 .fchip-del.is-active { background: #fdecec; border-color: #d64545; color: #b02a2a; border-style: solid; }
 
+
+/* admin avatar in header */
+.hb-avatar.hb-admin { background: var(--ink); color: var(--lime); box-shadow: 0 0 0 2px var(--lime); }
+.header-actions .icon-btn.is-admin:hover .hb-admin { color: var(--ink); background: var(--lime); }
+
