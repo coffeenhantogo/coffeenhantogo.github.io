@@ -1498,3 +1498,11 @@ img.img-ready { opacity: 1; transition: opacity .7s ease; }
   .mn-prices, .mn-stock { grid-column: 1 / -1; }
   .mn-price { flex: 1 1 120px; width: auto; }
 }
+
+/* avatar with a photo: hide the fallback initial / shield while the image loads (it comes back
+   automatically if the image fails, because onerror removes the <img>) */
+.hb-avatar:has(> img), .acct-avatar:has(> img), .ct-av:has(> img) { color: transparent; background: var(--latte); }
+.hb-avatar:has(> img) > svg { visibility: hidden; }
+.hb-avatar > img, .acct-avatar > img, .ct-av > img { animation: av-in .25s ease both; }
+@keyframes av-in { from { opacity: 0; } to { opacity: 1; } }
+@media (prefers-reduced-motion: reduce) { .hb-avatar > img, .acct-avatar > img, .ct-av > img { animation: none; } }
